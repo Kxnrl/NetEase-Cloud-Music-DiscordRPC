@@ -138,7 +138,7 @@ namespace NetEaseMusic_DiscordRPC
             if (!String.IsNullOrWhiteSpace(currentPlaying))
             {
                 // RPC
-                string[] text = currentPlaying.Split('-');
+                string[] text = currentPlaying.Replace(" - ", "\t").Split('\t');
                 if(text.Length > 1)
                 {
                     global.presence.details = text[0];
