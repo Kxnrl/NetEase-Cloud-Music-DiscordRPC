@@ -51,7 +51,10 @@ namespace NetEaseMusic_DiscordRPC
             }
 
             // Hide window
-            //Win32Api.ShowWindow(Process.GetCurrentProcess().MainWindowHandle, Win32Api.SW_HIDE);
+            Win32Api.User32.ShowWindow(Process.GetCurrentProcess().MainWindowHandle, Win32Api.User32.SW_HIDE);
+
+            // Auto Startup
+            Win32Api.Registry.SetAutoStartup();
 
             // start new thread to hook tray icon.
             new Thread(
@@ -154,18 +157,18 @@ namespace NetEaseMusic_DiscordRPC
             playerRunning = false;
 
             // Check Player
-            Win32Api.EnumWindows
+            Win32Api.User32.EnumWindows
             (
                 delegate (IntPtr hWnd, int lParam)
                 {
-                    Win32Api.GetClassName(hWnd, strbuilder, 256);
+                    Win32Api.User32.GetClassName(hWnd, strbuilder, 256);
 
                     if (strbuilder.ToString().Equals("OrpheusBrowserHost"))
                     {
                         // clear data
                         strbuilder.Clear();
-                        int length = Win32Api.GetWindowTextLength(hWnd);
-                        Win32Api.GetWindowText(hWnd, strbuilder, length + 1);
+                        int length = Win32Api.User32.GetWindowTextLength(hWnd);
+                        Win32Api.User32.GetWindowText(hWnd, strbuilder, length + 1);
                         currentPlaying = strbuilder.ToString();
                         playerRunning = true;
                     }
@@ -213,7 +216,7 @@ namespace NetEaseMusic_DiscordRPC
             }
 
             // Runing full screen Application?
-            if (Win32Api.IsFullscreenAppRunning())
+            if (Win32Api.User32.IsFullscreenAppRunning())
             {
                 // fresh status.
                 ClearStatus();
@@ -223,7 +226,7 @@ namespace NetEaseMusic_DiscordRPC
             }
                 
             // Running whitelist Application?
-            if (Win32Api.IsWhitelistAppRunning())
+            if (Win32Api.User32.IsWhitelistAppRunning())
             {
                 // fresh status.
                 ClearStatus();

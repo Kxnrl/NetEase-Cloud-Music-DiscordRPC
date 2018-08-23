@@ -1,12 +1,14 @@
 ﻿using System;
 using System.IO;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows.Forms;
+using Microsoft.Win32;
 
-namespace NetEaseMusic_DiscordRPC
+namespace NetEaseMusic_DiscordRPC.Win32Api
 {
-    public class Win32Api
+    public class User32
     {
         public const uint SW_HIDE = 0;
         public const uint SW_SHOW = 1;
@@ -36,7 +38,7 @@ namespace NetEaseMusic_DiscordRPC
         [DllImport("user32.dll")]
         public static extern bool EnumWindows(EnumWindowsProc enumProc, IntPtr lParam);
 
-        [DllImport("User32.Dll")]
+        [DllImport("user32.dll")]
         public static extern void GetClassName(IntPtr hwnd, StringBuilder sb, int nMaxCount);
 
         [DllImport("user32.dll")]
@@ -119,6 +121,66 @@ namespace NetEaseMusic_DiscordRPC
             }
 
             return false;
+        }
+    }
+
+    public class Registry
+    {
+        public static void SetAutoStartup()
+        {
+            RegistryKey baseKey = null;
+            try
+            {
+                // Open Base Key.
+                baseKey = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry64).OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", true);
+
+                if (baseKey == null)
+                {
+                    // wtf?
+                    Console.WriteLine(@"Cannot find HKCU\Software\Microsoft\Windows\CurrentVersion\Run");
+                    return;
+                }
+
+                bool check = false;
+
+                string[] runList = baseKey.GetValueNames();
+
+                foreach (string item in runList)
+                {
+                    if (item.Equals("NCM-DiscordRpc", StringComparison.OrdinalIgnoreCase))
+                    {
+                        // already.
+                        Console.WriteLine("AutoStartup already set.");
+                        check = true;
+                        break;
+                    }
+                }
+
+                if (check)
+                {
+                    // we are done.
+                    return;
+                }
+
+                // set
+                baseKey.SetValue("NCM-DiscordRpc", Assembly.GetEntryAssembly().Location);
+
+                // done.
+                Console.WriteLine("AutoStartup has been set.");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Failed to set autostartup: " + e.ToString());
+            }
+            finally
+            {
+                if (baseKey != null)
+                {
+                    // dispose
+                    baseKey.Close();
+                    baseKey.Dispose();
+                }
+            }
         }
     }
 }

@@ -7,7 +7,7 @@
     <ProjectGuid>{8A5639C6-8083-4623-9234-D87878036C4E}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <RootNamespace>NetEaseMusic_DiscordRPC</RootNamespace>
-    <AssemblyName>NetEaseMusic-DiscordRPC</AssemblyName>
+    <AssemblyName>NCM-DiscordRpc</AssemblyName>
     <TargetFrameworkVersion>v4.7.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
