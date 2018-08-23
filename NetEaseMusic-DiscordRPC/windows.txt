@@ -1,0 +1,14 @@
+﻿// Visual Studio
+VisualStudioAppManagement
+
+// Visual Studio Code
+VSCodeCrashServiceWindow
+
+// SourceEngine Game
+Valve001
+
+// UnrealEngine Game
+UnrealWindow
+
+// Shit Game
+Rainbow Six

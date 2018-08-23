@@ -15,15 +15,19 @@ namespace NetEaseMusic_DiscordRPC
 
     static class global
     {
-        public static DiscordRpc.RichPresence presence = new DiscordRpc.RichPresence();
-        public static DiscordRpc.EventHandlers handlers = new DiscordRpc.EventHandlers();
+        public static DiscordRpc.EventHandlers events = new DiscordRpc.EventHandlers();
         public static WebClient webclient = new WebClient();
+
+        public static DiscordRpc.RichPresence presence = null;
     }
 
     static class player
     {
         public static string currentPlaying = null;
         public static bool loadingApi = false;
+        public static bool requireUpdate = false;
+        public static long startPlaying = 0;
+        public static long endPlaying = 0;
     }
 
     static class tray
@@ -45,6 +49,9 @@ namespace NetEaseMusic_DiscordRPC
                 MessageBox.Show("NetEase Cloud Music DiscordRPC is already running.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 Environment.Exit(-1);
             }
+
+            // Hide window
+            //Win32Api.ShowWindow(Process.GetCurrentProcess().MainWindowHandle, Win32Api.SW_HIDE);
 
             // start new thread to hook tray icon.
             new Thread(
@@ -69,22 +76,19 @@ namespace NetEaseMusic_DiscordRPC
                 }
             ).Start();
 
-            // sleep 1 sec
+            // Wait 1 second.
             Thread.Sleep(1000);
-
-            // Discord Api
-            DiscordRpc.Initialize(info.ApplicationId, ref global.handlers, false, null);
 
             // Show notification
             tray.notifyIcon.BalloonTipTitle = "NetEase Cloud Music DiscordRPC";
             tray.notifyIcon.BalloonTipText = "External Plugin Started!";
             tray.notifyIcon.ShowBalloonTip(5000);
 
-            // Hide window
-            Win32Api.ShowWindow(Process.GetCurrentProcess().MainWindowHandle, Win32Api.SW_HIDE);
-
             // web client event
             global.webclient.DownloadStringCompleted += HttpRequestCompleted;
+
+            // Discord event
+            global.events.readyCallback += DiscordRpc_Connected;
 
             // start new thread to update status.
             new Thread(
@@ -102,10 +106,23 @@ namespace NetEaseMusic_DiscordRPC
             ).Start();
         }
 
+        private static void DiscordRpc_Connected(ref DiscordRpc.DiscordUser connectedUser)
+        {
+            Console.WriteLine("Discord Connected: " + Environment.NewLine + connectedUser.userId + Environment.NewLine + connectedUser.username + Environment.NewLine + connectedUser.avatar + Environment.NewLine + connectedUser.discriminator);
+        }
+
         private static void HttpRequestCompleted(object sender, DownloadStringCompletedEventArgs e)
         {
             player.loadingApi = false;
-            global.presence.endTimestamp = (long)Convert.ToDouble(e.Result) + global.presence.startTimestamp;
+            player.endPlaying = (long)Math.Round(Convert.ToDouble(e.Result), MidpointRounding.AwayFromZero) + player.startPlaying;
+
+            if (global.presence == null)
+            {
+                // RPC exited.
+                return;
+            }
+
+            global.presence.endTimestamp = player.endPlaying;
             DiscordRpc.UpdatePresence(global.presence);
         }
 
@@ -114,8 +131,7 @@ namespace NetEaseMusic_DiscordRPC
             MenuItem item = (MenuItem)sender;
             if (item == tray.exitButton)
             {
-                //UpdateStatus();
-                DiscordRpc.Shutdown();
+                ClearStatus();
                 tray.notifyIcon.Visible = false;
                 tray.notifyIcon.Dispose();
                 Thread.Sleep(50);
@@ -124,71 +140,158 @@ namespace NetEaseMusic_DiscordRPC
         }
 
         private static string currentPlaying = null;
+        private static StringBuilder strbuilder = new StringBuilder(256);
+        private static bool playerRunning = false; 
         private static void UpdateStatus()
         {
+            // Block thread.
+            Thread.Sleep(1000);
+
+            // clear data
+            strbuilder.Clear();
+
+            // set flag
+            playerRunning = false;
+
             // Check Player
             Win32Api.EnumWindows
             (
                 delegate (IntPtr hWnd, int lParam)
                 {
-                    StringBuilder str = new StringBuilder(256);
-                    Win32Api.GetClassName(hWnd, str, 256);
+                    Win32Api.GetClassName(hWnd, strbuilder, 256);
 
-                    if (str.ToString() == "OrpheusBrowserHost")
+                    if (strbuilder.ToString().Equals("OrpheusBrowserHost"))
                     {
+                        // clear data
+                        strbuilder.Clear();
                         int length = Win32Api.GetWindowTextLength(hWnd);
-                        StringBuilder builder = new StringBuilder(length);
-                        Win32Api.GetWindowText(hWnd, builder, length + 1);
-                        currentPlaying = builder.ToString();
+                        Win32Api.GetWindowText(hWnd, strbuilder, length + 1);
+                        currentPlaying = strbuilder.ToString();
+                        playerRunning = true;
                     }
 
                     return true;
-
                 },
                 IntPtr.Zero
             );
 
-            // Is Playing?
-            if (!String.IsNullOrWhiteSpace(currentPlaying))
+            // maybe application has been exited ?
+            if (!playerRunning)
             {
-                // RPC
+                // fresh status.
+                ClearStatus();
+                Console.WriteLine("Player exited!");
+                return;
+            }
+
+            // Has resultes?
+            if (String.IsNullOrWhiteSpace(currentPlaying))
+            {
+                // fresh status.
+                ClearStatus();
+                Console.WriteLine("Fatal ERROR!");
+                return;
+            }
+
+            Console.WriteLine("try to update new result");
+
+            // new song?
+            if (!currentPlaying.Equals(player.currentPlaying))
+            {
+                // strcopy
+                player.currentPlaying = currentPlaying;
+                player.startPlaying = (long)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
+
+                // loading timeleft
+                if (!player.loadingApi && !global.webclient.IsBusy)
+                {
+                    player.loadingApi = true;
+                    global.webclient.DownloadStringAsync(new Uri("https://music.kxnrl.com/api/v3/?engine=netease&format=string&data=length&song=" + currentPlaying));
+                }
+
+                player.requireUpdate = true;
+            }
+
+            // Runing full screen Application?
+            if (Win32Api.IsFullscreenAppRunning())
+            {
+                // fresh status.
+                ClearStatus();
+                player.requireUpdate = true;
+                Console.WriteLine("Runing fullscreen Application.");
+                return;
+            }
+                
+            // Running whitelist Application?
+            if (Win32Api.IsWhitelistAppRunning())
+            {
+                // fresh status.
+                ClearStatus();
+                player.requireUpdate = true;
+                Console.WriteLine("Running whitelist Application.");
+                return;
+            }
+
+            // check discord
+            CheckRpc();
+
+            // Update?
+            if (player.requireUpdate)
+            {
+                // RPC data
                 string[] text = currentPlaying.Replace(" - ", "\t").Split('\t');
-                if(text.Length > 1)
+                if (text.Length > 1)
                 {
                     global.presence.details = text[0];
-                    global.presence.state   = "by " + text[1]; // like spotify
+                    global.presence.state = "by " + text[1]; // like spotify
                 }
                 else
                 {
                     global.presence.details = currentPlaying;
-                    //global.presence.state = "VA";
+                    global.presence.state = string.Empty;
                 }
 
                 global.presence.largeImageKey = "timg";
                 global.presence.largeImageText = "NetEaseMusic";
-                global.presence.startTimestamp = (long)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
-                global.presence.endTimestamp = 0;
+                global.presence.startTimestamp = player.startPlaying;
+                global.presence.endTimestamp = player.endPlaying;
 
-                // Update?
-                if (!currentPlaying.Equals(player.currentPlaying))
-                {
-                    // loading timeleft
-                    if (!player.loadingApi && !global.webclient.IsBusy)
-                    {
-                        player.loadingApi = true;
-                        global.webclient.DownloadStringAsync(new Uri("https://music.kxnrl.com/api/v3/?engine=netease&format=string&data=length&song=" + currentPlaying));
-                    }
+                // Update status
+                DiscordRpc.UpdatePresence(global.presence);
 
-                    // strcopy
-                    player.currentPlaying = currentPlaying;
+                // logging
+                Console.WriteLine("updated new result");
+            }
+        }
 
-                    // Update status
-                    DiscordRpc.UpdatePresence(global.presence);
-                }
+        private static void ClearStatus()
+        {
+            if (global.presence == null)
+            {
+                // uninitialized
+                return;
             }
 
-            // Block thread.
-            Thread.Sleep(1000);
+            global.presence.FreeMem();
+            global.presence = null;
+
+            DiscordRpc.ClearPresence();
+            DiscordRpc.Shutdown();
+        }
+
+        private static void CheckRpc()
+        {
+            if (global.presence != null)
+            {
+                // Initialized
+                return;
+            }
+
+            global.presence = new DiscordRpc.RichPresence();
+            //global.events = new DiscordRpc.EventHandlers();
+
+            // Discord Api initializing...
+            DiscordRpc.Initialize(info.ApplicationId, ref global.events, false, null);
         }
     }
 }
