@@ -16,3 +16,10 @@ Enables Discord [Rich Presence](https://discordapp.com/rich-presence) For Neteas
 ### Feature
 * Sync Rich Presence.
 * Clear presence when you are using fullscreen or whitelist Application.
+* 同步动态到Discord.
+* 清除动态当你运行全屏程序或者其他白名单程序. (例如你全屏游玩CSGO或者打开了VisualStudio)
+  
+  
+  
+### Screenshot
+![Screenshot](https://static.kxnrl.com/images/web/screenshots/screenshot_201808230910.png)
