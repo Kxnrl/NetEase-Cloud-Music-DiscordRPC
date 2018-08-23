@@ -3,6 +3,7 @@ using System.Windows.Forms;
 using System.Threading;
 using System.Text;
 using System.Diagnostics;
+using System.Net;
 
 namespace NetEaseMusic_DiscordRPC
 {
@@ -16,11 +17,13 @@ namespace NetEaseMusic_DiscordRPC
     {
         public static DiscordRpc.RichPresence presence = new DiscordRpc.RichPresence();
         public static DiscordRpc.EventHandlers handlers = new DiscordRpc.EventHandlers();
+        public static WebClient webclient = new WebClient();
     }
 
     static class player
     {
         public static string currentPlaying = null;
+        public static bool loadingApi = false;
     }
 
     static class tray
@@ -80,6 +83,9 @@ namespace NetEaseMusic_DiscordRPC
             // Hide window
             Win32Api.ShowWindow(Process.GetCurrentProcess().MainWindowHandle, Win32Api.SW_HIDE);
 
+            // web client event
+            global.webclient.DownloadStringCompleted += HttpRequestCompleted;
+
             // start new thread to update status.
             new Thread(
                 delegate ()
@@ -96,12 +102,20 @@ namespace NetEaseMusic_DiscordRPC
             ).Start();
         }
 
+        private static void HttpRequestCompleted(object sender, DownloadStringCompletedEventArgs e)
+        {
+            player.loadingApi = false;
+            global.presence.endTimestamp = (long)Convert.ToDouble(e.Result) + global.presence.startTimestamp;
+            DiscordRpc.UpdatePresence(global.presence);
+        }
+
         private static void ApplicationHandler_TrayIcon(object sender, EventArgs e)
         {
             MenuItem item = (MenuItem)sender;
             if (item == tray.exitButton)
             {
                 //UpdateStatus();
+                DiscordRpc.Shutdown();
                 tray.notifyIcon.Visible = false;
                 tray.notifyIcon.Dispose();
                 Thread.Sleep(50);
@@ -153,10 +167,18 @@ namespace NetEaseMusic_DiscordRPC
                 global.presence.largeImageKey = "timg";
                 global.presence.largeImageText = "NetEaseMusic";
                 global.presence.startTimestamp = (long)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
+                global.presence.endTimestamp = 0;
 
                 // Update?
-                if(!currentPlaying.Equals(player.currentPlaying))
+                if (!currentPlaying.Equals(player.currentPlaying))
                 {
+                    // loading timeleft
+                    if (!player.loadingApi && !global.webclient.IsBusy)
+                    {
+                        player.loadingApi = true;
+                        global.webclient.DownloadStringAsync(new Uri("https://music.kxnrl.com/api/v3/?engine=netease&format=string&data=length&song=" + currentPlaying));
+                    }
+
                     // strcopy
                     player.currentPlaying = currentPlaying;
 
