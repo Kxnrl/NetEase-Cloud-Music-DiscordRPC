@@ -42,6 +42,9 @@ namespace NetEaseMusic_DiscordRPC
         [STAThread]
         static void Main(string[] args)
         {
+            // Hide window
+            Win32Api.User32.ShowWindow(Process.GetCurrentProcess().MainWindowHandle, Win32Api.User32.SW_HIDE);
+
             // check run once
             Mutex self = new Mutex(true, "NetEase Cloud Music DiscordRPC", out bool allow);
             if (!allow)
@@ -50,42 +53,31 @@ namespace NetEaseMusic_DiscordRPC
                 Environment.Exit(-1);
             }
 
-            // Hide window
-            Win32Api.User32.ShowWindow(Process.GetCurrentProcess().MainWindowHandle, Win32Api.User32.SW_HIDE);
+            // Check Rpc Dll
+            if (!System.IO.File.Exists(Application.StartupPath + "discord-rpc.dll"))
+            {
+                MessageBox.Show("discord-rpc.dll does not exists!", "Error");
+                if (MessageBox.Show("Do you want to download the missing files?", "Rpc Client", MessageBoxButtons.YesNo) != DialogResult.Yes)
+                {
+                    Environment.Exit(-1);
+                }
+
+                try
+                {
+                    using (WebClient web = new WebClient())
+                    {
+                        web.DownloadFile("http://build.kxnrl.com/_Raw/NetEaseMusicDiscordRpc/discord-rpc.dll", Application.StartupPath + "discord-rpc.dll");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Failed to download discord-rpc.dll !", "Fatal Error");
+                    Environment.Exit(-1);
+                }
+            }
 
             // Auto Startup
             Win32Api.Registry.SetAutoStartup();
-
-            // start new thread to hook tray icon.
-            new Thread(
-                delegate ()
-                {
-                    tray.notifyMenu = new ContextMenu();
-                    tray.exitButton = new MenuItem("Exit");
-                    tray.notifyMenu.MenuItems.Add(0, tray.exitButton);
-
-                    tray.notifyIcon = new NotifyIcon()
-                    {
-                        BalloonTipIcon = ToolTipIcon.Info,
-                        ContextMenu = tray.notifyMenu,
-                        Text = "NetEase Cloud Music DiscordRPC",
-                        Icon = Properties.Resources.icon,
-                        Visible = true,
-                    };
-
-                    tray.exitButton.Click += new EventHandler(ApplicationHandler_TrayIcon);
-
-                    Application.Run();
-                }
-            ).Start();
-
-            // Wait 1 second.
-            Thread.Sleep(1000);
-
-            // Show notification
-            tray.notifyIcon.BalloonTipTitle = "NetEase Cloud Music DiscordRPC";
-            tray.notifyIcon.BalloonTipText = "External Plugin Started!";
-            tray.notifyIcon.ShowBalloonTip(5000);
 
             // web client event
             global.webclient.DownloadStringCompleted += HttpRequestCompleted;
@@ -107,6 +99,29 @@ namespace NetEaseMusic_DiscordRPC
                     }
                 }
             ).Start();
+
+            tray.notifyMenu = new ContextMenu();
+            tray.exitButton = new MenuItem("Exit");
+            tray.notifyMenu.MenuItems.Add(0, tray.exitButton);
+
+            tray.notifyIcon = new NotifyIcon()
+            {
+                BalloonTipIcon = ToolTipIcon.Info,
+                ContextMenu = tray.notifyMenu,
+                Text = "NetEase Cloud Music DiscordRPC",
+                Icon = Properties.Resources.icon,
+                Visible = true,
+            };
+
+            tray.exitButton.Click += new EventHandler(ApplicationHandler_TrayIcon);
+
+            // Show notification
+            tray.notifyIcon.BalloonTipTitle = "NetEase Cloud Music DiscordRPC";
+            tray.notifyIcon.BalloonTipText = "External Plugin Started!";
+            tray.notifyIcon.ShowBalloonTip(5000);
+
+            // Run
+            Application.Run();
         }
 
         private static void DiscordRpc_Connected(ref DiscordRpc.DiscordUser connectedUser)
