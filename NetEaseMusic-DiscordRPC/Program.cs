@@ -9,8 +9,13 @@ namespace NetEaseMusic_DiscordRPC
 {
     static class info
     {
-        public static readonly string ApplicationName = "NetEase Music";
-        public static readonly string ApplicationId   = "724001455685632101";
+        public static string ApplicationName = "";
+        public static string ApplicationId   = "";
+        public static string PresenceImageKey = "";
+
+        public static readonly string DefaultApplicationName = "NetEase Music";
+        public static readonly string DefaultApplicationId = "724001455685632101";
+        public static readonly string DefaultPresenceImageKey = "neteasemusic_white";
     }
 
     static class global
@@ -74,6 +79,28 @@ namespace NetEaseMusic_DiscordRPC
                     MessageBox.Show("Failed to download discord-rpc.dll !", "Fatal Error");
                     Environment.Exit(-1);
                 }
+            }
+
+            if (!System.IO.File.Exists(Application.StartupPath + "\\application.txt"))
+            {
+                MessageBox.Show("application.txt does not exist", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Environment.Exit(-1);
+            }
+
+            try
+            {
+                using (System.IO.StreamReader sr = new System.IO.StreamReader(Application.StartupPath + "\\application.txt", Encoding.UTF8))
+                {
+                    info.ApplicationId = sr.ReadLine().Trim();
+                    info.ApplicationName = sr.ReadLine().Trim();
+                    info.PresenceImageKey = sr.ReadLine().Trim();
+                }
+            }catch(Exception e)
+            {
+                MessageBox.Show("Failed to read application.txt, using default application", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                info.ApplicationId = info.DefaultApplicationId;
+                info.ApplicationName = info.DefaultApplicationName;
+                info.PresenceImageKey = info.DefaultPresenceImageKey;
             }
 
             // Auto Startup

@@ -1,0 +1,8 @@
+724001455685632101
+Netease Music
+neteasemusic_white
+
+Application id on line 1
+Application name on line 2
+Image key on line 3
+The rest of the file is not read
