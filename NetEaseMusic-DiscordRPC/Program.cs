@@ -40,6 +40,7 @@ namespace NetEaseMusic_DiscordRPC
         public static ContextMenu notifyMenu;
         public static NotifyIcon notifyIcon;
         public static MenuItem exitButton;
+        public static MenuItem neteaseStatusDisplay;
     }
 
     class Program
@@ -48,7 +49,7 @@ namespace NetEaseMusic_DiscordRPC
         static void Main(string[] args)
         {
             // Hide window
-            //Win32Api.User32.ShowWindow(Process.GetCurrentProcess().MainWindowHandle, Win32Api.User32.SW_HIDE);
+            Win32Api.User32.ShowWindow(Process.GetCurrentProcess().MainWindowHandle, Win32Api.User32.SW_HIDE);
 
             // check run once
             Mutex self = new Mutex(true, "NetEase Cloud Music DiscordRPC", out bool allow);
@@ -129,7 +130,11 @@ namespace NetEaseMusic_DiscordRPC
 
             tray.notifyMenu = new ContextMenu();
             tray.exitButton = new MenuItem("Exit");
-            tray.notifyMenu.MenuItems.Add(0, tray.exitButton);
+            tray.neteaseStatusDisplay= new MenuItem("Starting...");
+            tray.neteaseStatusDisplay.Enabled = false;
+            tray.notifyMenu.MenuItems.Add(0, tray.neteaseStatusDisplay);
+            tray.notifyMenu.MenuItems.Add(1, tray.exitButton);
+
 
             tray.notifyIcon = new NotifyIcon()
             {
@@ -287,6 +292,8 @@ namespace NetEaseMusic_DiscordRPC
                 string[] text = currentPlaying.Replace(" - ", "\t").Split('\t');
                 if (text.Length > 1)
                 {
+                    //Updates the status in taskbar, to help user debug
+                    tray.neteaseStatusDisplay.Text = "Now Playing: " + text[0];
                     global.presence.details = text[0];
                     global.presence.state = "by " + text[1]; // like spotify
                 }
