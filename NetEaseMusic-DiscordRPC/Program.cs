@@ -54,7 +54,7 @@ namespace NetEaseMusic_DiscordRPC
             }
 
             // Check Rpc Dll
-            if (!System.IO.File.Exists(Application.StartupPath + "discord-rpc.dll"))
+            if (!System.IO.File.Exists(Application.StartupPath + "\\discord-rpc.dll"))
             {
                 MessageBox.Show("discord-rpc.dll does not exists!", "Error");
                 if (MessageBox.Show("Do you want to download the missing files?", "Rpc Client", MessageBoxButtons.YesNo) != DialogResult.Yes)
@@ -66,7 +66,7 @@ namespace NetEaseMusic_DiscordRPC
                 {
                     using (WebClient web = new WebClient())
                     {
-                        web.DownloadFile("http://build.kxnrl.com/_Raw/NetEaseMusicDiscordRpc/discord-rpc.dll", Application.StartupPath + "discord-rpc.dll");
+                        web.DownloadFile("http://build.kxnrl.com/_Raw/NetEaseMusicDiscordRpc/discord-rpc.dll", Application.StartupPath + "\\discord-rpc.dll");
                     }
                 }
                 catch (Exception ex)
