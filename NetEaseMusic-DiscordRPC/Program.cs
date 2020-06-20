@@ -9,8 +9,8 @@ namespace NetEaseMusic_DiscordRPC
 {
     static class info
     {
-        public static readonly string ApplicationName = "NetEase Cloud Music";
-        public static readonly string ApplicationId   = "481562643958595594";
+        public static readonly string ApplicationName = "NetEase Music";
+        public static readonly string ApplicationId   = "724001455685632101";
     }
 
     static class global
@@ -43,7 +43,7 @@ namespace NetEaseMusic_DiscordRPC
         static void Main(string[] args)
         {
             // Hide window
-            Win32Api.User32.ShowWindow(Process.GetCurrentProcess().MainWindowHandle, Win32Api.User32.SW_HIDE);
+            //Win32Api.User32.ShowWindow(Process.GetCurrentProcess().MainWindowHandle, Win32Api.User32.SW_HIDE);
 
             // check run once
             Mutex self = new Mutex(true, "NetEase Cloud Music DiscordRPC", out bool allow);
@@ -269,8 +269,8 @@ namespace NetEaseMusic_DiscordRPC
                     global.presence.state = string.Empty;
                 }
 
-                global.presence.largeImageKey = "timg";
-                global.presence.largeImageText = "NetEaseMusic";
+                global.presence.largeImageKey = "neteasemusic_white";
+                global.presence.largeImageText = "NetEase Music";
                 global.presence.startTimestamp = player.startPlaying;
                 global.presence.endTimestamp = player.endPlaying;
 
