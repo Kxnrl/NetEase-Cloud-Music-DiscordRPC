@@ -1,8 +1,8 @@
 ﻿// Visual Studio
-VisualStudioAppManagement
+// VisualStudioAppManagement
 
 // Visual Studio Code
-VSCodeCrashServiceWindow
+// VSCodeCrashServiceWindow
 
 // SourceEngine Game
 Valve001
