@@ -3,8 +3,9 @@
   
 Enables Discord [Rich Presence](https://discordapp.com/rich-presence) For Netease Cloud Music.  
 将网易云音乐动态同步到Discord.  
-2.0 Major update, Rpc will be clear when the music pauses.
+2.0 Major update, Rpc will be clear when the music pauses.  
 2.0版本更新之后, 可以在暂停时清除Rpc状态了.  
+  
   
   
 ### Info
@@ -25,3 +26,14 @@ Enables Discord [Rich Presence](https://discordapp.com/rich-presence) For Neteas
   
 ### Screenshot
 ![Screenshot](https://img.kxnrl.com/ugc/6929F80BC24B7D4388C852F8FBC3B870CE6E0C63)
+  
+  
+  
+### Changes log
+#### 2.0
+- 直接读取内存来获取歌曲进度和长度
+- 新增->当暂停音乐时,Rpc状态会被清除
+- 开机自启功能重做
+- 更新.NET Framework 到4.8版本
+- 使用新的DiscordRpc库
+- 改为winform启动
