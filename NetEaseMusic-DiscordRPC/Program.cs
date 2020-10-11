@@ -47,22 +47,25 @@ namespace NetEaseMusic_DiscordRPC
                     GC.Collect();
                     GC.WaitForFullGCComplete();
 
-                    Thread.Sleep(100);
-
-                    Debug.Print($"InLoop");
+                    Thread.Sleep(150);
 
                     var lastRate = currentRate;
                     var lastLens = maxSongLens;
-                    var title = string.Empty;
-                    MemoryUtil.LoadMemory(ref title, ref currentRate, ref maxSongLens);
-                    if (currentRate.Equals(lastRate))
-                    {
-                        Debug.Print($"Music pause? {lastRate} | {currentRate}");
-                        playerState = false;
-                    }
-                    else if (string.IsNullOrEmpty(title))
+                    var diffRate = currentRate - lastRate;
+
+                    if (!Win32Api.User32.GetWindowTitle("OrpheusBrowserHost", out var title, out var pid) || pid == 0)
                     {
                         Debug.Print($"player is not running");
+                        playerState = false;
+                        goto done;
+                    }
+
+                    // load memory
+                    MemoryUtil.LoadMemory(pid, ref currentRate, ref maxSongLens);
+
+                    if (diffRate > 0 && diffRate < 0.0416) //currentRate.Equals(lastRate)
+                    {
+                        Debug.Print($"Music pause? {currentRate} | {lastRate} | {(diffRate)}");
                         playerState = false;
                     }
                     else if (!playerState || !maxSongLens.Equals(lastLens))
@@ -81,13 +84,15 @@ namespace NetEaseMusic_DiscordRPC
 
                         playerState = true;
                     }
-                    else
+                    // check
+                    else if (Math.Abs(diffRate) < 1.0)
                     {
-                        // just same data
-                        Debug.Print($"Skip -> playerState -> {playerState} | Equals {maxSongLens} | {lastLens}");
+                        // skip playing
+                        Debug.Print($"Skip Rpc {Math.Abs(diffRate)}");
                         continue;
                     }
 
+                    done:
                     Debug.Print($"playerState -> {playerState} | Equals {maxSongLens} | {lastLens}");
 
                     // update

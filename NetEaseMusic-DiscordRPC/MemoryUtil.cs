@@ -7,14 +7,9 @@ namespace NetEaseMusic_DiscordRPC
 {
     class MemoryUtil
     {
-        public static void LoadMemory(ref string text, ref double rate, ref double lens)
+        public static void LoadMemory(int pid, ref double rate, ref double lens)
         {
-            var process = Process.GetProcessesByName("cloudmusic").FirstOrDefault(p => p.MainWindowTitle.Length > 0);
-            if (process == null)
-            {
-                // not found
-                return;
-            }
+            var process = Process.GetProcessById(pid);
 
             //Debug.Print($"Process Hadnle {process.Id}");
 
@@ -26,6 +21,7 @@ namespace NetEaseMusic_DiscordRPC
                 {
                     address = module.BaseAddress;
                     //Debug.Print($"Match module address {module.BaseAddress}");
+                    break;
                 }
             }
 
@@ -47,12 +43,14 @@ namespace NetEaseMusic_DiscordRPC
             if (!ReadProcessMemory(handle, address + 0x8ADA70, buffer, sizeof(double), IntPtr.Zero))
             {
                 //Debug.Print($"Failed to load memory at 0x{(address + 0x8ADA70).ToString("X")}");
+                return;
             }
             var current = BitConverter.ToDouble(buffer, 0);
 
             if (!ReadProcessMemory(handle, address + 0x8CDF88, buffer, sizeof(double), IntPtr.Zero))
             {
                 //Debug.Print($"Failed to load memory at 0x{(address + 0x8CDF88).ToString("X")}");
+                return;
             }
             var maxlens = BitConverter.ToDouble(buffer, 0);
 
@@ -60,7 +58,7 @@ namespace NetEaseMusic_DiscordRPC
 
             rate = current;
             lens = maxlens;
-            text = process.MainWindowTitle;
+            //text = process.MainWindowTitle;
         }
 
         [DllImport("kernel32", SetLastError = true)]
