@@ -3,11 +3,13 @@
   
 Enables Discord [Rich Presence](https://discordapp.com/rich-presence) For Netease Cloud Music.  
 将网易云音乐动态同步到Discord.  
+2.0 Major update, Rpc will be clear when the music pauses.
+2.0版本更新之后, 可以在暂停时清除Rpc状态了.  
   
   
 ### Info
-* This application will auto launch on system start. If you don't want to do this, disable it in taskmgr.  
-* 这个软件会在你开机的时候自启动, 如果你不需要可以在任务管理器中禁用.  
+* This application will auto launch on system start.
+* 这个软件会在你开机的时候自启动.  
 * To add Application to whilelist, edit windows.txt. More info see [FindWindow](https://msdn.microsoft.com/en-us/library/windows/desktop/ms633499(v=vs.85).aspx)
 * 要添加软件到白名单, 只需要在windows.txt新增一行输入白名单程序的lpClassName. 查看文档 [FindWindow](https://msdn.microsoft.com/en-us/library/windows/desktop/ms633499(v=vs.85).aspx)
   
@@ -22,4 +24,4 @@ Enables Discord [Rich Presence](https://discordapp.com/rich-presence) For Neteas
   
   
 ### Screenshot
-![Screenshot](https://static.kxnrl.com/images/web/screenshots/screenshot_201808230910.png)
+![Screenshot](https://img.kxnrl.com/ugc/6929F80BC24B7D4388C852F8FBC3B870CE6E0C63)
