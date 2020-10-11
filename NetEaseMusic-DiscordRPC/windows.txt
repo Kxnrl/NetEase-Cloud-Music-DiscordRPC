@@ -10,5 +10,8 @@ Valve001
 // UnrealEngine Game
 UnrealWindow
 
+// Unity3D Game
+UnityWndClass
+
 // Shit Game
 Rainbow Six

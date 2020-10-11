@@ -49,21 +49,27 @@ namespace NetEaseMusic_DiscordRPC
 
                     Thread.Sleep(150);
 
-                    var lastRate = currentRate;
-                    var lastLens = maxSongLens;
-                    var diffRate = currentRate - lastRate;
-
                     if (!Win32Api.User32.GetWindowTitle("OrpheusBrowserHost", out var title, out var pid) || pid == 0)
                     {
                         Debug.Print($"player is not running");
                         playerState = false;
-                        goto done;
+                        goto update;
                     }
 
                     // load memory
+                    var lastRate = currentRate;
+                    var lastLens = maxSongLens;
+
                     MemoryUtil.LoadMemory(pid, ref currentRate, ref maxSongLens);
 
-                    if (diffRate > 0 && diffRate < 0.0416) //currentRate.Equals(lastRate)
+                    var diffRate = currentRate - lastRate;
+
+                    if (currentRate == 0.0 && maxSongLens == 0.0)
+                    {
+                        Debug.Print($"invalid? {currentRate} | {lastRate} | {(diffRate)}");
+                        playerState = false;
+                    }
+                    else if (currentRate > 0 && diffRate < 0.0416) //currentRate.Equals(lastRate)
                     {
                         Debug.Print($"Music pause? {currentRate} | {lastRate} | {(diffRate)}");
                         playerState = false;
@@ -88,15 +94,19 @@ namespace NetEaseMusic_DiscordRPC
                     else if (Math.Abs(diffRate) < 1.0)
                     {
                         // skip playing
-                        Debug.Print($"Skip Rpc {Math.Abs(diffRate)}");
+                        Debug.Print($"Skip Rpc {currentRate} | {lastRate} | {(Math.Abs(diffRate))}");
                         continue;
                     }
 
-                    done:
                     Debug.Print($"playerState -> {playerState} | Equals {maxSongLens} | {lastLens}");
 
+                    update:
                     // update
+#if DEBUG
+                    if (!playerState)
+#else
                     if (Win32Api.User32.IsFullscreenAppRunning() || Win32Api.User32.IsWhitelistAppRunning() || !playerState)
+#endif
                     {
                         discord.ClearPresence();
                         Debug.Print("Clear Rpc");
