@@ -69,9 +69,10 @@ namespace NetEaseMusic_DiscordRPC
                         Debug.Print($"invalid? {currentRate} | {lastRate} | {(diffRate)}");
                         playerState = false;
                     }
-                    else if (currentRate > 0 && diffRate < 0.0416) //currentRate.Equals(lastRate)
+                    //          magic hacks? //currentRate != 0.109 && 
+                    else if ((currentRate > 0.109 || currentRate == 0) &&(diffRate < 0.001 && diffRate >= 0) && maxSongLens == lastLens) //currentRate.Equals(lastRate)
                     {
-                        Debug.Print($"Music pause? {currentRate} | {lastRate} | {(diffRate)}");
+                        Debug.Print($"Music pause? {currentRate} | {lastRate} | {maxSongLens} | {lastLens} | {(diffRate)}");
                         playerState = false;
                     }
                     else if (!playerState || !maxSongLens.Equals(lastLens))
@@ -94,7 +95,7 @@ namespace NetEaseMusic_DiscordRPC
                     else if (Math.Abs(diffRate) < 1.0)
                     {
                         // skip playing
-                        Debug.Print($"Skip Rpc {currentRate} | {lastRate} | {(Math.Abs(diffRate))}");
+                        //Debug.Print($"Skip Rpc {currentRate} | {lastRate} | {(Math.Abs(diffRate))}");
                         continue;
                     }
 
