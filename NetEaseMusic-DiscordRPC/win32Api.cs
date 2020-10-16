@@ -117,11 +117,18 @@ namespace NetEaseMusic_DiscordRPC.Win32Api
                     continue;
                 }
 
-                var window = FindWindow(window_name, null);
-                if (window != IntPtr.Zero)
+                if (window_name.EndsWith(".exe"))
                 {
-                    //Console.WriteLine("FindWindow {0}", window_name);
-                    return true;
+                    return Process.GetProcessesByName(window_name.Replace(".exe", "")).Length > 0;
+                }
+                else
+                {
+                    var window = FindWindow(window_name, null);
+                    if (window != IntPtr.Zero)
+                    {
+                        Debug.WriteLine($"FindWindow {window_name}");
+                        return true;
+                    }
                 }
             }
 

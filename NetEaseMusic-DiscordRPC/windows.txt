@@ -2,7 +2,7 @@
 VisualStudioAppManagement
 
 // Visual Studio Code
-VSCodeCrashServiceWindow
+CodeHelper.exe
 
 // SourceEngine Game
 Valve001

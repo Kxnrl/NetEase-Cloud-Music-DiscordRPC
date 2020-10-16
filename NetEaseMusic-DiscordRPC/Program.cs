@@ -39,7 +39,7 @@ namespace NetEaseMusic_DiscordRPC
                 var currentSing = string.Empty;
                 var currentRate = 0.0;
                 var maxSongLens = 0.0;
-
+                
                 while (true)
                 {
                     // 用户就喜欢超低内存占用
@@ -49,6 +49,10 @@ namespace NetEaseMusic_DiscordRPC
 
                     Thread.Sleep(150);
 
+                    var lastRate = currentRate;
+                    var lastLens = maxSongLens;
+                    var skipThis = false;
+
                     if (!Win32Api.User32.GetWindowTitle("OrpheusBrowserHost", out var title, out var pid) || pid == 0)
                     {
                         Debug.Print($"player is not running");
@@ -57,9 +61,6 @@ namespace NetEaseMusic_DiscordRPC
                     }
 
                     // load memory
-                    var lastRate = currentRate;
-                    var lastLens = maxSongLens;
-
                     MemoryUtil.LoadMemory(pid, ref currentRate, ref maxSongLens);
 
                     var diffRate = currentRate - lastRate;
@@ -92,25 +93,35 @@ namespace NetEaseMusic_DiscordRPC
                         playerState = true;
                     }
                     // check
-                    else if (Math.Abs(diffRate) < 1.0)
+                    else if (Math.Abs(diffRate) < 1.0 && discord.CurrentPresence != null)
                     {
                         // skip playing
-                        //Debug.Print($"Skip Rpc {currentRate} | {lastRate} | {(Math.Abs(diffRate))}");
-                        continue;
+                        Debug.Print($"Skip Rpc {currentRate} | {lastRate} | {(Math.Abs(diffRate))}");
+                        skipThis = true;
                     }
 
                     Debug.Print($"playerState -> {playerState} | Equals {maxSongLens} | {lastLens}");
 
                     update:
                     // update
-#if DEBUG
+#if _DEBUG
                     if (!playerState)
 #else
                     if (Win32Api.User32.IsFullscreenAppRunning() || Win32Api.User32.IsWhitelistAppRunning() || !playerState)
 #endif
                     {
-                        discord.ClearPresence();
-                        Debug.Print("Clear Rpc");
+                        Debug.Print($"Try clear Rpc {Win32Api.User32.IsFullscreenAppRunning()} | {Win32Api.User32.IsWhitelistAppRunning()}");
+                        if (discord.CurrentPresence != null)
+                        {
+                            discord.ClearPresence();
+                            Debug.Print("Clear Rpc");
+                        }
+                        continue;
+                    }
+
+                    if (skipThis)
+                    {
+                        // skip
                         continue;
                     }
 
