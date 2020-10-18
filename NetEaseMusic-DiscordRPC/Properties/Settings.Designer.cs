@@ -34,5 +34,77 @@ namespace NetEaseMusic_DiscordRPC.Properties {
                 this["IsFirstTime"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public string FullscreenRun {
+            get {
+                return ((string)(this["FullscreenRun"]));
+            }
+            set {
+                this["FullscreenRun"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public string WhitelistsRun {
+            get {
+                return ((string)(this["WhitelistsRun"]));
+            }
+            set {
+                this["WhitelistsRun"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("default_dark")]
+        public string DefSkin {
+            get {
+                return ((string)(this["DefSkin"]));
+            }
+            set {
+                this["DefSkin"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public string DefStates {
+            get {
+                return ((string)(this["DefStates"]));
+            }
+            set {
+                this["DefStates"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public string showPaused {
+            get {
+                return ((string)(this["showPaused"]));
+            }
+            set {
+                this["showPaused"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public string DefActive {
+            get {
+                return ((string)(this["DefActive"]));
+            }
+            set {
+                this["DefActive"] = value;
+            }
+        }
     }
 }

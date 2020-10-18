@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace NetEaseMusic_DiscordRPC
 {
     static class MemoryUtil
     {
-        private static int    ProcessId;
+        private static int ProcessId;
         private static IntPtr EntryPoint;
         private static IntPtr BaseAddress;
 
