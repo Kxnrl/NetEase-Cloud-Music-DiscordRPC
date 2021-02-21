@@ -46,18 +46,20 @@ namespace NetEaseMusic_DiscordRPC
 
             // offset 2.7.1 -> 0x8ADA70
             // offset 2.7.3 -> 0x8BDAD0
-            if (!ReadProcessMemory(EntryPoint, BaseAddress + 0x8BDAD0, buffer, sizeof(double), IntPtr.Zero))
+            // offset 2.7.6 -> 0x8BEAD8
+            if (!ReadProcessMemory(EntryPoint, BaseAddress + 0x8BEAD8, buffer, sizeof(double), IntPtr.Zero))
             {
-                Debug.Print($"Failed to load memory at 0x{(BaseAddress + 0x8BDAD0).ToString("X")}");
+                Debug.Print($"Failed to load memory at 0x{(BaseAddress + 0x8BEAD8).ToString("X")}");
                 return;
             }
             var current = BitConverter.ToDouble(buffer, 0);
 
             // offset 2.7.1 -> 0x8CDF88
             // offset 2.7.3 -> 0x8DEB98
-            if (!ReadProcessMemory(EntryPoint, BaseAddress + 0x8DEB98, buffer, sizeof(double), IntPtr.Zero))
+            // offset 2.7.6 -> 0x8DFC08
+            if (!ReadProcessMemory(EntryPoint, BaseAddress + 0x8DFC08, buffer, sizeof(double), IntPtr.Zero))
             {
-                //Debug.Print($"Failed to load memory at 0x{(BaseAddress + 0x792BEB98).ToString("X")}");
+                Debug.Print($"Failed to load memory at 0x{(BaseAddress + 0x8DFC08).ToString("X")}");
                 return;
             }
             var maxlens = BitConverter.ToDouble(buffer, 0);

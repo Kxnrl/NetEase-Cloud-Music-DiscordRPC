@@ -112,7 +112,7 @@ namespace NetEaseMusic_DiscordRPC
 #if _DEBUG
                     if (!playerState)
 #else
-                        if (Win32Api.User32.IsFullscreenAppRunning() || Win32Api.User32.IsWhitelistAppRunning() ||
+                        if (/*Win32Api.User32.IsFullscreenAppRunning() || Win32Api.User32.IsWhitelistAppRunning() ||*/
                             !playerState)
 #endif
                         {
