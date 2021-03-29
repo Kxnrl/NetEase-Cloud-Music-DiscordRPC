@@ -49,7 +49,7 @@ namespace NetEaseMusic_DiscordRPC
                         GC.Collect();
                         GC.WaitForFullGCComplete();
 
-                        Thread.Sleep(150);
+                        Thread.Sleep(TimeSpan.FromMilliseconds(250));
 
                         var lastRate = currentRate;
                         var lastLens = maxSongLens;
@@ -109,10 +109,10 @@ namespace NetEaseMusic_DiscordRPC
 
                         update:
                         // update
-#if _DEBUG
+#if DEBUG
                     if (!playerState)
 #else
-                        if (/*Win32Api.User32.IsFullscreenAppRunning() || Win32Api.User32.IsWhitelistAppRunning() ||*/
+                        if (Win32Api.User32.IsFullscreenAppRunning() || Win32Api.User32.IsWhitelistAppRunning() ||
                             !playerState)
 #endif
                         {
