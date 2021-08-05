@@ -1,9 +1,9 @@
-﻿using System;
-using System.Windows.Forms;
-using System.Threading;
+﻿using DiscordRPC;
+using System;
 using System.Diagnostics;
+using System.Threading;
 using System.Threading.Tasks;
-using DiscordRPC;
+using System.Windows.Forms;
 
 namespace NetEaseMusic_DiscordRPC
 {
@@ -107,7 +107,7 @@ namespace NetEaseMusic_DiscordRPC
 
                         Debug.Print($"playerState -> {playerState} | Equals {maxSongLens} | {lastLens}");
 
-                        update:
+                    update:
                         // update
 #if DEBUG
                     if (!playerState)

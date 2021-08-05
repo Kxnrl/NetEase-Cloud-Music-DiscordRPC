@@ -48,7 +48,8 @@ namespace NetEaseMusic_DiscordRPC
             // offset 2.7.3 -> 0x8BDAD0
             // offset 2.7.6 -> 0x8BEAD8
             // offset 2.8.0 -> 0x939B50
-            if (!ReadProcessMemory(EntryPoint, BaseAddress + 0x939B50, buffer, sizeof(double), IntPtr.Zero))
+            // offset 2.9.2 -> 0x93EB38
+            if (!ReadProcessMemory(EntryPoint, BaseAddress + 0x93EB38, buffer, sizeof(double), IntPtr.Zero))
             {
                 Debug.Print($"Failed to load memory at 0x{(BaseAddress + 0x939B48).ToString("X")}");
                 return;
@@ -59,7 +60,8 @@ namespace NetEaseMusic_DiscordRPC
             // offset 2.7.3 -> 0x8DEB98
             // offset 2.7.6 -> 0x8DFC080
             // offset 2.8.0 -> 0x961D98
-            if (!ReadProcessMemory(EntryPoint, BaseAddress + 0x961D98, buffer, sizeof(double), IntPtr.Zero))
+            // offset 2.9.2 -> 0x967DA8
+            if (!ReadProcessMemory(EntryPoint, BaseAddress + 0x967DA8, buffer, sizeof(double), IntPtr.Zero))
             {
                 Debug.Print($"Failed to load memory at 0x{(BaseAddress + 0x961DA8).ToString("X")}");
                 return;
