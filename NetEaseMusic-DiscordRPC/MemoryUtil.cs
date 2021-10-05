@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -7,9 +8,12 @@ namespace NetEaseMusic_DiscordRPC
 {
     static class MemoryUtil
     {
-        private static int    ProcessId;
+        private static int ProcessId;
         private static IntPtr EntryPoint;
         private static IntPtr BaseAddress;
+        private static string Version;
+
+        public static List<MemoryOffset> Offsets;
 
         public static void LoadMemory(int pid, ref double rate, ref double lens)
         {
@@ -28,10 +32,14 @@ namespace NetEaseMusic_DiscordRPC
                     if ("cloudmusic.dll".Equals(module.ModuleName))
                     {
                         BaseAddress = module.BaseAddress;
+
                         //Debug.Print($"Match module address {module.BaseAddress}");
                         break;
                     }
                 }
+
+                Version = process.MainModule?.FileVersionInfo.ProductVersion;
+                //Debug.Print($"Match application version {Version}");
             }
 
             if (EntryPoint == IntPtr.Zero || BaseAddress == IntPtr.Zero)
@@ -40,7 +48,22 @@ namespace NetEaseMusic_DiscordRPC
                 return;
             }
 
+            if (string.IsNullOrEmpty(Version))
+            {
+                //Debug.Print($"Null version");
+                return;
+            }
+
             ProcessId = pid;
+
+            var offset = Offsets.FirstOrDefault(x => x.Version == Version);
+            if (offset == null)
+            {
+                ///Debug.Print($"Offset not found");
+                return;
+            }
+
+            //Debug.Print($"Offset -> {offset.Offsets.Length} | {offset.Offsets.Schedule}");
 
             var buffer = new byte[sizeof(double) + 1];
 
@@ -49,9 +72,10 @@ namespace NetEaseMusic_DiscordRPC
             // offset 2.7.6 -> 0x8BEAD8
             // offset 2.8.0 -> 0x939B50
             // offset 2.9.2 -> 0x93EB38
-            if (!ReadProcessMemory(EntryPoint, BaseAddress + 0x93EB38, buffer, sizeof(double), IntPtr.Zero))
+            // 0ffset 2.9.5 -> 0x955F60
+            if (!ReadProcessMemory(EntryPoint, BaseAddress + offset.Offsets.Schedule, buffer, sizeof(double), IntPtr.Zero))
             {
-                Debug.Print($"Failed to load memory at 0x{(BaseAddress + 0x939B48).ToString("X")}");
+                Debug.Print($"Failed to load memory at 0x{(BaseAddress + offset.Offsets.Schedule).ToString("X")}");
                 return;
             }
             var current = BitConverter.ToDouble(buffer, 0);
@@ -61,14 +85,15 @@ namespace NetEaseMusic_DiscordRPC
             // offset 2.7.6 -> 0x8DFC080
             // offset 2.8.0 -> 0x961D98
             // offset 2.9.2 -> 0x967DA8
-            if (!ReadProcessMemory(EntryPoint, BaseAddress + 0x967DA8, buffer, sizeof(double), IntPtr.Zero))
+            // offset 2.9.5 -> 0x97F588
+            if (!ReadProcessMemory(EntryPoint, BaseAddress + offset.Offsets.Length, buffer, sizeof(double), IntPtr.Zero))
             {
-                Debug.Print($"Failed to load memory at 0x{(BaseAddress + 0x961DA8).ToString("X")}");
+                Debug.Print($"Failed to load memory at 0x{(BaseAddress + offset.Offsets.Length).ToString("X")}");
                 return;
             }
             var maxlens = BitConverter.ToDouble(buffer, 0);
 
-            //Debug.Print($"Current value {current} | {maxlens} | {process.MainWindowTitle}");
+            //Debug.Print($"Current value {current} | {maxlens}");
 
             rate = current;
             lens = maxlens;

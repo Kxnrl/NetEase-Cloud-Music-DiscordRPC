@@ -1,17 +1,21 @@
 ﻿using DiscordRPC;
+using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace NetEaseMusic_DiscordRPC
 {
-    internal class Program
+    static class Program
     {
         private const string ApplicationId = "481562643958595594";
 
-        private static void Main()
+        private static async Task Main()
         {
             // check run once
             _ = new Mutex(true, "NetEase Cloud Music DiscordRPC", out var allow);
@@ -30,7 +34,9 @@ namespace NetEaseMusic_DiscordRPC
                 Properties.Settings.Default.Save();
             }
 
-            Task.Run(() =>
+            await GetOffsetsAsync();
+
+            _ = Task.Run(() =>
             {
                 using var discord = new DiscordRpcClient(ApplicationId);
                 discord.Initialize();
@@ -110,7 +116,7 @@ namespace NetEaseMusic_DiscordRPC
                     update:
                         // update
 #if DEBUG
-                    if (!playerState)
+                        if (!playerState)
 #else
                         if (Win32Api.User32.IsFullscreenAppRunning() || Win32Api.User32.IsWhitelistAppRunning() ||
                             !playerState)
@@ -154,7 +160,6 @@ namespace NetEaseMusic_DiscordRPC
                     }
             });
 
-
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
@@ -191,6 +196,40 @@ namespace NetEaseMusic_DiscordRPC
             };
 
             Application.Run();
+        }
+
+        private static async Task GetOffsetsAsync()
+        {
+        retry:
+            try
+            {
+                using var client = new HttpClient()
+                {
+                    BaseAddress = new Uri("https://api.kxnrl.com/NCM-Rpc/"),
+                    Timeout = TimeSpan.FromMinutes(1)
+                };
+
+                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+                var response = await client.GetAsync("GetOffsets/v1/");
+
+                response.EnsureSuccessStatusCode();
+
+                var json = await response.Content.ReadAsStringAsync();
+
+                MemoryUtil.Offsets = JsonConvert.DeserializeObject<List<MemoryOffset>>(json);
+            }
+            catch (Exception e)
+            {
+                var r = MessageBox.Show(e.Message, "Failed to get offsets", MessageBoxButtons.RetryCancel,
+                    MessageBoxIcon.Error);
+                if (r == DialogResult.Retry)
+                    goto retry;
+
+#if !DEBUG
+                Environment.Exit(-1);
+#endif
+            }
         }
     }
 }

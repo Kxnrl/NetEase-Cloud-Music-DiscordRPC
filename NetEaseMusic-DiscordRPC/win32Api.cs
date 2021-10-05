@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows.Forms;
@@ -148,7 +147,7 @@ namespace NetEaseMusic_DiscordRPC.Win32Api
 
                     if (match.Equals(classname) && GetWindowThreadProcessId(handle, out var xpid) != 0 && xpid != 0)
                     {
-                        title = GetWindowTitle(handle); 
+                        title = GetWindowTitle(handle);
                         processId = xpid;
                     }
 
