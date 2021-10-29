@@ -134,6 +134,20 @@ namespace NetEaseMusic_DiscordRPC.Win32Api
             return false;
         }
 
+        public static bool GetWindowTitle(string match, out string text)
+        {
+            text = null;
+
+            var handle = FindWindow(match, null);
+
+            if (handle == IntPtr.Zero)
+                return false;
+
+            text = GetWindowTitle(handle);
+
+            return true;
+        }
+
         public static bool GetWindowTitle(string match, out string text, out int pid)
         {
             var title = string.Empty;

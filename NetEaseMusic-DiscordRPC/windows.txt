@@ -1,8 +1,9 @@
 ﻿// Visual Studio
 VisualStudioAppManagement
+devenv.exe
 
 // Visual Studio Code
-CodeHelper.exe
+Code.exe
 
 // SourceEngine Game
 Valve001
