@@ -1,0 +1,42 @@
+[
+  {
+    "version": "2.9.5.199424",
+    "offsets": { "length": 9958792, "schedule": 9789280 }
+  },
+  {
+    "version": "2.9.6.199543",
+    "offsets": { "length": 10541176, "schedule": 9846704 }
+  },
+  {
+    "version": "2.9.7.199711",
+    "offsets": { "length": 10591048, "schedule": 9895888 }
+  },
+  {
+    "version": "2.9.8.199750",
+    "offsets": { "length": 10989816, "schedule": 10269480 }
+  },
+  {
+    "version": "2.9.8.199759",
+    "offsets": { "length": 10989816, "schedule": 10269488 }
+  },
+  {
+    "version": "2.9.9.199909",
+    "offsets": { "length": 11076056, "schedule": 10355536 }
+  },
+  {
+    "version": "2.9.10.200061",
+    "offsets": { "length": 11092440, "schedule": 10371920 }
+  },
+  {
+    "version": "2.10.2.200154",
+    "offsets": { "length": 11583864, "schedule": 10843496 }
+  },
+  {
+    "version": "2.10.3.200198",
+    "offsets": { "length": 11443528, "schedule": 10720592 }
+  },
+  {
+    "version": "2.10.7.200791",
+    "offsets": { "length": 11689328, "schedule": 10962280 }
+  }
+]
