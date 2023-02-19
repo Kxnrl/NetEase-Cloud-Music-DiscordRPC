@@ -104,7 +104,7 @@ namespace NetEaseMusic_DiscordRPC
                             }
                             else if (!playerState || !maxSongLens.Equals(lastLens))
                             {
-                                var match = title.Replace(" - ", "\t").Split('\t');
+                                var match = title.Replace("\r", "").Replace("\n", "").Replace(" - ", "\t").Split('\t');
                                 if (match.Length > 1)
                                 {
                                     currentSong = match[0];
