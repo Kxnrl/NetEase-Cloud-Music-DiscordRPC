@@ -48,185 +48,6 @@ namespace NetEaseMusic_DiscordRPC
                 Environment.Exit(-1);
             }
 
-            _ = Task.Run(() =>
-            {
-                var playerState = false;
-                var currentSong = string.Empty;
-                var currentSing = string.Empty;
-                var currentRate = 0.0;
-                var maxSongLens = 0.0;
-                var lastPlaying = -1;
-
-                while (true)
-                    try
-                    {
-                        // 用户就喜欢超低内存占用
-                        // 但是实际上来说并没有什么卵用
-                        GC.Collect();
-                        GC.WaitForFullGCComplete();
-
-
-                        Thread.Sleep(TimeSpan.FromMilliseconds(250));
-
-                        string title;
-                        int pid;
-
-                        var lastRate = currentRate;
-                        var lastLens = maxSongLens;
-                        var skipThis = false;
-
-                        if (!Win32Api.User32.GetWindowTitle("OrpheusBrowserHost", out title, out pid) && !Win32Api.User32.GetWindowTitle("QQMusic_Daemon_Wnd", out title))
-                        {
-                            Debug.Print($"player is not running");
-                            playerState = false;
-                            goto update;
-                        }
-
-                        if (pid > 0)
-                        {
-                            // load memory
-                            MemoryUtil.LoadMemory(pid, ref currentRate, ref maxSongLens);
-
-                            var diffRate = currentRate - lastRate;
-
-                            if (currentRate == 0.0 && maxSongLens == 0.0)
-                            {
-                                Debug.Print($"invalid? {currentRate} | {lastRate} | {diffRate}");
-                                playerState = false;
-                            }
-                            //          magic hacks? //currentRate != 0.109 && 
-                            else if ((currentRate > 0.109 || currentRate == 0) && diffRate < 0.001 && diffRate >= 0 &&
-                                     maxSongLens == lastLens) //currentRate.Equals(lastRate)
-                            {
-                                Debug.Print(
-                                    $"Music pause? {currentRate} | {lastRate} | {maxSongLens} | {lastLens} | {diffRate}");
-                                playerState = false;
-                            }
-                            else if (!playerState || !maxSongLens.Equals(lastLens))
-                            {
-                                var match = title.Replace("\r", "").Replace("\n", "").Replace(" - ", "\t").Split('\t');
-                                if (match.Length > 1)
-                                {
-                                    currentSong = match[0];
-                                    currentSing = match[1]; // like spotify
-                                }
-                                else
-                                {
-                                    currentSong = title;
-                                    currentSing = string.Empty;
-                                }
-
-                                playerState = true;
-                            }
-                            // check
-                            else if (Math.Abs(diffRate) < 1.0 && neteaseRpc.CurrentPresence != null)
-                            {
-                                // skip playing
-                                Debug.Print($"Skip Rpc {currentRate} | {lastRate} | {Math.Abs(diffRate)}");
-                                skipThis = true;
-                            }
-                        }
-                        else if (pid == 0)
-                        {
-                            // mark as playing and always update
-                            playerState = true;
-                            skipThis = false;
-
-                            var match = title.Replace(" - ", "\t").Split('\t');
-                            if (match.Length > 1)
-                            {
-                                currentSong = match[0];
-                                currentSing = match[1]; // like spotify
-                            }
-                            else
-                            {
-                                currentSong = title;
-                                currentSing = string.Empty;
-                            }
-                        }
-
-                        Debug.Print($"playerState -> {playerState} | Equals {maxSongLens} | {lastLens}");
-
-                        if (lastPlaying != pid)
-                        {
-                            // player changed
-                            skipThis = false;
-                        }
-
-                        lastPlaying = pid;
-
-                    update:
-                        // update
-#if DEBUG
-                        if (!playerState)
-#else
-                        if (Win32Api.User32.IsFullscreenAppRunning() || Win32Api.User32.IsWhitelistAppRunning() ||
-                            !playerState)
-#endif
-                        {
-                            Debug.Print(
-                                $"Try clear Rpc {Win32Api.User32.IsFullscreenAppRunning()} | {Win32Api.User32.IsWhitelistAppRunning()}");
-                            if (neteaseRpc.CurrentPresence != null)
-                            {
-                                neteaseRpc.ClearPresence();
-                                Debug.Print("Clear netease rpc");
-                            }
-                            if (tencentRpc.CurrentPresence != null)
-                            {
-                                tencentRpc.ClearPresence();
-                                Debug.Print("Clear tencent rpc");
-                            }
-                            continue;
-                        }
-
-                        if (skipThis)
-                            // skip
-                            continue;
-
-                        if (pid > 0)
-                        {
-                            tencentRpc.ClearPresence();
-                            neteaseRpc.SetPresence(new RichPresence
-                            {
-                                Details = $"🎵　{currentSong}",
-                                State = $"🎤　{currentSing}",
-
-                                Timestamps = new Timestamps(
-                                DateTime.UtcNow.Subtract(TimeSpan.FromSeconds(currentRate)),
-                                DateTime.UtcNow.Subtract(TimeSpan.FromSeconds(currentRate))
-                                    .Add(TimeSpan.FromSeconds(maxSongLens))),
-
-                                Assets = new Assets
-                                {
-                                    LargeImageKey = "timg",
-                                    LargeImageText = "Netease Cloud Music"
-                                }
-                            });
-                        }
-                        else if (pid == 0)
-                        {
-                            neteaseRpc.ClearPresence();
-                            tencentRpc.SetPresence(new RichPresence
-                            {
-                                Details = $"🎵　{currentSong}",
-                                State = $"🎤　{currentSing}",
-
-                                Assets = new Assets
-                                {
-                                    LargeImageKey = "qimg",
-                                    LargeImageText = "QQMusic"
-                                }
-                            });
-                        }
-
-                        Debug.Print("Update Rpc");
-                    }
-                    catch (Exception e)
-                    {
-                        Console.WriteLine($"Exception while listening: {e}");
-                    }
-            });
-
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
@@ -262,7 +83,194 @@ namespace NetEaseMusic_DiscordRPC
                 autoButton.Text = "AutoStart" + "    " + (AutoStart.Check() ? "√" : "✘");
             };
 
+            _ = Task.Run(async () => await UpdateThread(neteaseRpc, tencentRpc));
             Application.Run();
+        }
+
+        private static async Task UpdateThread(DiscordRpcClient neteaseRpc, DiscordRpcClient tencentRpc)
+        {
+
+            var playerState = false;
+            var currentSong = string.Empty;
+            var currentSing = string.Empty;
+            var currentRate = 0.0;
+            var maxSongLens = 0.0;
+            var lastPlaying = -1;
+
+            while (true)
+            {
+                try
+                {
+                    string title;
+                    int pid;
+
+                    var lastRate = currentRate;
+                    var lastLens = maxSongLens;
+                    var skipThis = false;
+
+                    if (!Win32Api.User32.GetWindowTitle("OrpheusBrowserHost", out title, out pid) &&
+                        !Win32Api.User32.GetWindowTitle("QQMusic_Daemon_Wnd", out title))
+                    {
+                        Debug.Print($"player is not running");
+                        playerState = false;
+                        goto update;
+                    }
+
+                    if (pid > 0)
+                    {
+                        // load memory
+                        MemoryUtil.LoadMemory(pid, ref currentRate, ref maxSongLens);
+
+                        var diffRate = currentRate - lastRate;
+
+                        if (currentRate == 0.0 && maxSongLens == 0.0)
+                        {
+                            Debug.Print($"invalid? {currentRate} | {lastRate} | {diffRate}");
+                            playerState = false;
+                        }
+                        //          magic hacks? //currentRate != 0.109 && 
+                        else if ((currentRate > 0.109 || currentRate == 0) && diffRate < 0.001 && diffRate >= 0 &&
+                                 maxSongLens == lastLens) //currentRate.Equals(lastRate)
+                        {
+                            Debug.Print(
+                                $"Music pause? {currentRate} | {lastRate} | {maxSongLens} | {lastLens} | {diffRate}");
+                            playerState = false;
+                        }
+                        else if (!playerState || !maxSongLens.Equals(lastLens))
+                        {
+                            var match = title.Replace("\r", "").Replace("\n", "").Replace(" - ", "\t").Split('\t');
+                            if (match.Length > 1)
+                            {
+                                currentSong = match[0];
+                                currentSing = match[1]; // like spotify
+                            }
+                            else
+                            {
+                                currentSong = title;
+                                currentSing = string.Empty;
+                            }
+
+                            playerState = true;
+                        }
+                        // check
+                        else if (Math.Abs(diffRate) < 1.0 && neteaseRpc.CurrentPresence != null)
+                        {
+                            // skip playing
+                            Debug.Print($"Skip Rpc {currentRate} | {lastRate} | {Math.Abs(diffRate)}");
+                            skipThis = true;
+                        }
+                    }
+                    else if (pid == 0)
+                    {
+                        // mark as playing and always update
+                        playerState = true;
+                        skipThis = false;
+
+                        var match = title.Replace(" - ", "\t").Split('\t');
+                        if (match.Length > 1)
+                        {
+                            currentSong = match[0];
+                            currentSing = match[1]; // like spotify
+                        }
+                        else
+                        {
+                            currentSong = title;
+                            currentSing = string.Empty;
+                        }
+                    }
+
+                    Debug.Print($"playerState -> {playerState} | Equals {maxSongLens} | {lastLens}");
+
+                    if (lastPlaying != pid)
+                    {
+                        // player changed
+                        skipThis = false;
+                    }
+
+                    lastPlaying = pid;
+
+                    update:
+                    // update
+#if DEBUG
+                    if (!playerState)
+#else
+                        if (Win32Api.User32.IsFullscreenAppRunning() || Win32Api.User32.IsWhitelistAppRunning() ||
+                            !playerState)
+#endif
+                    {
+                        Debug.Print(
+                            $"Try clear Rpc {Win32Api.User32.IsFullscreenAppRunning()} | {Win32Api.User32.IsWhitelistAppRunning()}");
+                        if (neteaseRpc.CurrentPresence != null)
+                        {
+                            neteaseRpc.ClearPresence();
+                            Debug.Print("Clear netease rpc");
+                        }
+
+                        if (tencentRpc.CurrentPresence != null)
+                        {
+                            tencentRpc.ClearPresence();
+                            Debug.Print("Clear tencent rpc");
+                        }
+
+                        continue;
+                    }
+
+                    if (skipThis)
+                        // skip
+                        continue;
+
+                    if (pid > 0)
+                    {
+                        tencentRpc.ClearPresence();
+                        neteaseRpc.SetPresence(new RichPresence
+                        {
+                            Details = $"🎵　{currentSong}",
+                            State = $"🎤　{currentSing}",
+
+                            Timestamps = new Timestamps(
+                                DateTime.UtcNow.Subtract(TimeSpan.FromSeconds(currentRate)),
+                                DateTime.UtcNow.Subtract(TimeSpan.FromSeconds(currentRate))
+                                    .Add(TimeSpan.FromSeconds(maxSongLens))),
+
+                            Assets = new Assets
+                            {
+                                LargeImageKey = "timg",
+                                LargeImageText = "Netease Cloud Music"
+                            }
+                        });
+                    }
+                    else if (pid == 0)
+                    {
+                        neteaseRpc.ClearPresence();
+                        tencentRpc.SetPresence(new RichPresence
+                        {
+                            Details = $"🎵　{currentSong}",
+                            State = $"🎤　{currentSing}",
+
+                            Assets = new Assets
+                            {
+                                LargeImageKey = "qimg",
+                                LargeImageText = "QQMusic"
+                            }
+                        });
+                    }
+
+                    Debug.Print("Update Rpc");
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine($"Exception while listening: {e}");
+                }
+                finally
+                {
+                    // 用户就喜欢超低内存占用
+                    // 但是实际上来说并没有什么卵用
+                    GC.Collect();
+                    GC.WaitForFullGCComplete();
+
+                    await Task.Delay(TimeSpan.FromMilliseconds(200));
+                }
+            }
         }
 
         private static async Task GetOffsetsAsync()
@@ -272,13 +280,12 @@ namespace NetEaseMusic_DiscordRPC
             {
                 using var client = new HttpClient()
                 {
-                    BaseAddress = new Uri("https://api.kxnrl.com/NCM-Rpc/"),
                     Timeout = TimeSpan.FromMinutes(1)
                 };
 
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
-                var response = await client.GetAsync("GetOffsets/v1/");
+                var response = await client.GetAsync("https://github.com/Kxnrl/NetEase-Cloud-Music-DiscordRPC/raw/master/offset/offset.json");
 
                 response.EnsureSuccessStatusCode();
 
