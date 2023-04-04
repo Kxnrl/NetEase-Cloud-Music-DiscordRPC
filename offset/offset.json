@@ -36,6 +36,10 @@
     "offsets": { "length": 11443528, "schedule": 10720592 }
   },
   {
+    "version": "2.10.5.200537",
+    "offsets": { "length": 11500936, "schedule": 10777928 }
+  },
+  {
     "version": "2.10.7.200791",
     "offsets": { "length": 11689328, "schedule": 10962280 }
   }
