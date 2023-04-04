@@ -1,5 +1,9 @@
 [
   {
+    "version": "2.7.1.198277",
+    "offsets": { "length": 9345688, "schedule": 9210616 }
+  },
+  {
     "version": "2.9.5.199424",
     "offsets": { "length": 9958792, "schedule": 9789280 }
   },
