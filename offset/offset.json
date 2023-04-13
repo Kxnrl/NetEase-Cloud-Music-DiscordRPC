@@ -1,5 +1,9 @@
 [
   {
+    "version": "2.7.1.198277",
+    "offsets": { "length": 9345688, "schedule": 9210616 }
+  },
+  {
     "version": "2.9.5.199424",
     "offsets": { "length": 9958792, "schedule": 9789280 }
   },
@@ -34,6 +38,10 @@
   {
     "version": "2.10.3.200198",
     "offsets": { "length": 11443528, "schedule": 10720592 }
+  },
+  {
+    "version": "2.10.5.200537",
+    "offsets": { "length": 11500936, "schedule": 10777928 }
   },
   {
     "version": "2.10.7.200791",
