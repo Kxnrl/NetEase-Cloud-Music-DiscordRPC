@@ -38,5 +38,9 @@
   {
     "version": "2.10.7.200791",
     "offsets": { "length": 11689328, "schedule": 10962280 }
+  },
+  {
+    "version": "2.10.8.200945",
+    "offsets": { "length": 11689240, "schedule": 10962288 }
   }
 ]
