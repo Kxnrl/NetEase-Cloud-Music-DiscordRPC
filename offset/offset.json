@@ -58,5 +58,9 @@
   {
     "version": "2.10.10.201297",
     "offsets": { "length": 11713272, "schedule": 10982784 }
+  },
+  {
+    "version": "2.10.11.201538",
+    "offsets": { "length": 11717272, "schedule": 10986880 }
   }
 ]
