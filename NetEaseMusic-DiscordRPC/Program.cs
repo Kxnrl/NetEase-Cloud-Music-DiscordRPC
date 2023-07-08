@@ -8,10 +8,11 @@ using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Button = DiscordRPC.Button;
 
 namespace NetEaseMusic_DiscordRPC
 {
-    static class Program
+    internal static class Program
     {
         private const string NeteaseAppId = "481562643958595594";
         private const string TencentAppId = "903485504899665990";
@@ -63,7 +64,7 @@ namespace NetEaseMusic_DiscordRPC
                 ContextMenu = notifyMenu,
                 Text = "NetEase Cloud Music DiscordRPC",
                 Icon = Properties.Resources.icon,
-                Visible = true
+                Visible = true,
             };
 
             exitButton.Click += (sender, args) =>
@@ -76,9 +77,13 @@ namespace NetEaseMusic_DiscordRPC
             {
                 var x = AutoStart.Check();
                 if (x)
+                {
                     AutoStart.Remove();
+                }
                 else
+                {
                     AutoStart.Set();
+                }
 
                 autoButton.Text = "AutoStart" + "    " + (AutoStart.Check() ? "√" : "✘");
             };
@@ -89,10 +94,13 @@ namespace NetEaseMusic_DiscordRPC
 
         private static async Task UpdateThread(DiscordRpcClient neteaseRpc, DiscordRpcClient tencentRpc)
         {
-
             var playerState = false;
             var currentSong = string.Empty;
             var currentSing = string.Empty;
+            var currentHash = string.Empty;
+            var currentImgX = string.Empty;
+            var currentKeyX = string.Empty;
+            var currentCurl = string.Empty;
             var currentRate = 0.0;
             var maxSongLens = 0.0;
             var lastPlaying = -1;
@@ -101,14 +109,11 @@ namespace NetEaseMusic_DiscordRPC
             {
                 try
                 {
-                    string title;
-                    int pid;
-
                     var lastRate = currentRate;
                     var lastLens = maxSongLens;
                     var skipThis = false;
 
-                    if (!Win32Api.User32.GetWindowTitle("OrpheusBrowserHost", out title, out pid) &&
+                    if (!Win32Api.User32.GetWindowTitle("OrpheusBrowserHost", out var title, out var pid) &&
                         !Win32Api.User32.GetWindowTitle("QQMusic_Daemon_Wnd", out title))
                     {
                         Debug.Print($"player is not running");
@@ -116,10 +121,16 @@ namespace NetEaseMusic_DiscordRPC
                         goto update;
                     }
 
+                    // NetEase
                     if (pid > 0)
                     {
                         // load memory
-                        MemoryUtil.LoadMemory(pid, ref currentRate, ref maxSongLens);
+                        var artists = string.Empty;
+                        var album = string.Empty;
+                        var cover = string.Empty;
+                        var url = string.Empty;
+                        MemoryUtil.LoadNetEaseMemory(pid, ref currentRate, ref maxSongLens, ref title, ref album, ref artists,
+                            ref cover, ref url, out var extra);
 
                         var diffRate = currentRate - lastRate;
 
@@ -128,7 +139,7 @@ namespace NetEaseMusic_DiscordRPC
                             Debug.Print($"invalid? {currentRate} | {lastRate} | {diffRate}");
                             playerState = false;
                         }
-                        //          magic hacks? //currentRate != 0.109 && 
+                        // magic hacks? //currentRate != 0.109 && 
                         else if ((currentRate > 0.109 || currentRate == 0) && diffRate < 0.001 && diffRate >= 0 &&
                                  maxSongLens == lastLens) //currentRate.Equals(lastRate)
                         {
@@ -138,16 +149,41 @@ namespace NetEaseMusic_DiscordRPC
                         }
                         else if (!playerState || !maxSongLens.Equals(lastLens))
                         {
-                            var match = title.Replace("\r", "").Replace("\n", "").Replace(" - ", "\t").Split('\t');
-                            if (match.Length > 1)
+                            if (extra)
                             {
-                                currentSong = match[0];
-                                currentSing = match[1]; // like spotify
+                                // force refresh if cache loaded
+                                var hash = $"{title}-{artists}-{cover}";
+                                if (hash != currentHash)
+                                {
+                                    skipThis = false;
+                                }
+
+                                currentHash = hash;
+
+                                currentSong = title;
+                                currentSing = artists;
+
+                                currentImgX = cover;
+                                currentKeyX = album;
+                                currentCurl = url;
                             }
                             else
                             {
-                                currentSong = title;
-                                currentSing = string.Empty;
+                                var match = title.Replace("\r", "").Replace("\n", "").Replace(" - ", "\t").Split('\t');
+                                if (match.Length > 1)
+                                {
+                                    currentSong = match[0];
+                                    currentSing = match[1]; // like spotify
+                                }
+                                else
+                                {
+                                    currentSong = title;
+                                    currentSing = string.Empty;
+                                }
+
+                                currentImgX = "timg";
+                                currentKeyX = "Netease Cloud Music";
+                                currentCurl = "https://music.163.com/#/search/m/?s=" + currentSong;
                             }
 
                             playerState = true;
@@ -160,11 +196,18 @@ namespace NetEaseMusic_DiscordRPC
                             skipThis = true;
                         }
                     }
+                    // Tencent
                     else if (pid == 0)
                     {
                         // mark as playing and always update
                         playerState = true;
                         skipThis = false;
+
+                        // TODO
+                        // soundId   = QQMusic.dll+B661C8
+                        // soundLen  = QQMusic.dll+B661DC
+                        // soundInfo = ptr + 0x19B09528
+                        // https://y.qq.com/n/ryqq/songDetail/
 
                         var match = title.Replace(" - ", "\t").Split('\t');
                         if (match.Length > 1)
@@ -189,13 +232,13 @@ namespace NetEaseMusic_DiscordRPC
 
                     lastPlaying = pid;
 
-                    update:
+                update:
                     // update
 #if DEBUG
                     if (!playerState)
 #else
-                        if (Win32Api.User32.IsFullscreenAppRunning() || Win32Api.User32.IsWhitelistAppRunning() ||
-                            !playerState)
+                    if (Win32Api.User32.IsFullscreenAppRunning() || Win32Api.User32.IsWhitelistAppRunning() ||
+                        !playerState)
 #endif
                     {
                         Debug.Print(
@@ -216,16 +259,18 @@ namespace NetEaseMusic_DiscordRPC
                     }
 
                     if (skipThis)
-                        // skip
+                    // skip
+                    {
                         continue;
+                    }
 
                     if (pid > 0)
                     {
                         tencentRpc.ClearPresence();
                         neteaseRpc.SetPresence(new RichPresence
                         {
-                            Details = $"🎵　{currentSong}",
-                            State = $"🎤　{currentSing}",
+                            Details = $"🎵 {currentSong}",
+                            State = $"🎤 {currentSing}",
 
                             Timestamps = new Timestamps(
                                 DateTime.UtcNow.Subtract(TimeSpan.FromSeconds(currentRate)),
@@ -234,9 +279,21 @@ namespace NetEaseMusic_DiscordRPC
 
                             Assets = new Assets
                             {
-                                LargeImageKey = "timg",
-                                LargeImageText = "Netease Cloud Music"
-                            }
+                                LargeImageKey = currentImgX,
+                                LargeImageText = currentKeyX,
+                                SmallImageKey = "timg",
+                                SmallImageText = "Netease Cloud Music",
+                            },
+
+                            Buttons = new[]
+                            {
+                                new Button
+                                {
+                                    Label = "🎧 Listen",
+                                    Url = currentCurl,
+                                    // Url = "https://music.163.com/"
+                                },
+                            },
                         });
                     }
                     else if (pid == 0)
@@ -250,8 +307,8 @@ namespace NetEaseMusic_DiscordRPC
                             Assets = new Assets
                             {
                                 LargeImageKey = "qimg",
-                                LargeImageText = "QQMusic"
-                            }
+                                LargeImageText = "QQMusic",
+                            },
                         });
                     }
 
@@ -280,12 +337,14 @@ namespace NetEaseMusic_DiscordRPC
             {
                 using var client = new HttpClient()
                 {
-                    Timeout = TimeSpan.FromMinutes(1)
+                    Timeout = TimeSpan.FromMinutes(1),
                 };
 
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
-                var response = await client.GetAsync("https://github.com/Kxnrl/NetEase-Cloud-Music-DiscordRPC/raw/master/offset/offset.json");
+                var response =
+                    await client.GetAsync(
+                        "https://github.com/Kxnrl/NetEase-Cloud-Music-DiscordRPC/raw/master/offset/offset.json");
 
                 response.EnsureSuccessStatusCode();
 
@@ -298,7 +357,9 @@ namespace NetEaseMusic_DiscordRPC
                 var r = MessageBox.Show(e.Message, "Failed to get offsets", MessageBoxButtons.RetryCancel,
                     MessageBoxIcon.Error);
                 if (r == DialogResult.Retry)
+                {
                     goto retry;
+                }
 
 #if !DEBUG
                 Environment.Exit(-1);

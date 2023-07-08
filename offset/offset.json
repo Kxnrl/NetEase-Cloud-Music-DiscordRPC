@@ -61,6 +61,6 @@
   },
   {
     "version": "2.10.11.201538",
-    "offsets": { "length": 11717272, "schedule": 10986880 }
+    "offsets": { "length": 11717272, "schedule": 10986880, "pointer": 11713712 }
   }
 ]

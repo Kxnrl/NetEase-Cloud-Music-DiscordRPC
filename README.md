@@ -20,10 +20,13 @@ Enables Discord [Rich Presence](https://discordapp.com/rich-presence) For Neteas
   
   
 ### Screenshot
-<img src="https://img.kxnrl.com/ugc/6929F80BC24B7D4388C852F8FBC3B870CE6E0C63" width="50%" height="50%" /><img src="https://img.kxnrl.com/ugc/EEBC797196D9DF6023A6504D17744D6353DE1D40" width="49%" height="49%" />
+<img src="https://img.kxnrl.com/ugc/7BAF83A0C2A618D06A6A932DF1E0FBD4EB876266" width="50%" height="50%" /><img src="https://img.kxnrl.com/ugc/EEBC797196D9DF6023A6504D17744D6353DE1D40" width="49%" height="49%" />
   
   
 ### Changes log
+#### 2.3
+- 新增网易云封面显示
+- 新增网易云听歌按钮
 #### 2.2
 - 添加QQ音乐Rpc
 #### 2.1

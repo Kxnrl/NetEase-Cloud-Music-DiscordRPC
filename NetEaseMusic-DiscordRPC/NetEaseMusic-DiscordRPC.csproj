@@ -77,7 +77,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AutoStart.cs" />
-    <Compile Include="json.cs" />
+    <Compile Include="Json.cs" />
     <Compile Include="MemoryUtil.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

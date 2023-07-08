@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace NetEaseMusic_DiscordRPC
 {
@@ -15,8 +16,10 @@ namespace NetEaseMusic_DiscordRPC
 
         public static List<MemoryOffset> Offsets;
 
-        public static void LoadMemory(int pid, ref double rate, ref double lens)
+        public static void LoadNetEaseMemory(int pid, ref double rate, ref double lens, ref string title, ref string album, ref string artists, ref string cover, ref string url, out bool extra)
         {
+            extra = false;
+
             if (ProcessId != pid)
             {
                 EntryPoint = OpenProcess(0x10, IntPtr.Zero, pid);
@@ -24,33 +27,20 @@ namespace NetEaseMusic_DiscordRPC
 
                 using var process = Process.GetProcessById(pid);
 
-                //Debug.Print($"Process Hadnle {process.Id}");
-
                 foreach (ProcessModule module in process.Modules)
                 {
-                    //Debug.Print($"Find module {module.ModuleName}");
                     if ("cloudmusic.dll".Equals(module.ModuleName))
                     {
                         BaseAddress = module.BaseAddress;
-
-                        //Debug.Print($"Match module address {module.BaseAddress}");
                         break;
                     }
                 }
 
                 Version = process.MainModule?.FileVersionInfo.ProductVersion;
-                //Debug.Print($"Match application version {Version}");
             }
 
-            if (EntryPoint == IntPtr.Zero || BaseAddress == IntPtr.Zero)
+            if (EntryPoint == IntPtr.Zero || BaseAddress == IntPtr.Zero || string.IsNullOrEmpty(Version))
             {
-                //Debug.Print($"Null handle");
-                return;
-            }
-
-            if (string.IsNullOrEmpty(Version))
-            {
-                //Debug.Print($"Null version");
                 return;
             }
 
@@ -59,20 +49,12 @@ namespace NetEaseMusic_DiscordRPC
             var offset = Offsets.FirstOrDefault(x => x.Version == Version);
             if (offset == null)
             {
-                ///Debug.Print($"Offset not found");
                 return;
             }
 
-            //Debug.Print($"Offset -> {offset.Offsets.Length} | {offset.Offsets.Schedule}");
+            // create buffer
+            var buffer = new byte[64];
 
-            var buffer = new byte[sizeof(double) + 1];
-
-            // offset 2.7.1 -> 0x8ADA70
-            // offset 2.7.3 -> 0x8BDAD0
-            // offset 2.7.6 -> 0x8BEAD8
-            // offset 2.8.0 -> 0x939B50
-            // offset 2.9.2 -> 0x93EB38
-            // 0ffset 2.9.5 -> 0x955F60
             if (!ReadProcessMemory(EntryPoint, BaseAddress + offset.Offsets.Schedule, buffer, sizeof(double), IntPtr.Zero))
             {
                 Debug.Print($"Failed to load memory at 0x{(BaseAddress + offset.Offsets.Schedule).ToString("X")}");
@@ -80,24 +62,66 @@ namespace NetEaseMusic_DiscordRPC
             }
             var current = BitConverter.ToDouble(buffer, 0);
 
-            // offset 2.7.1 -> 0x8CDF88
-            // offset 2.7.3 -> 0x8DEB98
-            // offset 2.7.6 -> 0x8DFC080
-            // offset 2.8.0 -> 0x961D98
-            // offset 2.9.2 -> 0x967DA8
-            // offset 2.9.5 -> 0x97F588
             if (!ReadProcessMemory(EntryPoint, BaseAddress + offset.Offsets.Length, buffer, sizeof(double), IntPtr.Zero))
             {
                 Debug.Print($"Failed to load memory at 0x{(BaseAddress + offset.Offsets.Length).ToString("X")}");
                 return;
             }
-            var maxlens = BitConverter.ToDouble(buffer, 0);
-
-            //Debug.Print($"Current value {current} | {maxlens}");
+            var length = BitConverter.ToDouble(buffer, 0);
 
             rate = current;
-            lens = maxlens;
-            //text = process.MainWindowTitle;
+            lens = length;
+
+            if (offset.Offsets.CachePointer > 0)
+            {
+                try
+                {
+                    // offset +8 (28 8f 0b050043 04 88)
+                    // 28 8f 0b050043 04 88 31 00 39 00 39 00 38 00 36 00 39 00 36 00 34 00 34 00 33 00 5f 00 31 00 5f 00 38  00 34 00 33 00 35 00360039 00 36 00 31 00 37 00 33 00 00
+                    // op code
+                    // cloudmusic.dll+709868:
+                    // 7A1A985A - 0F82 68030000 - jb cloudmusic.dll + 709BC8
+                    // 7A1A9860 - 0FBA 25 284F547A 01 - bt[cloudmusic.dll + AA4F28],01
+                    // 7A1A9868 - 73 07 - jae cloudmusic.dll + 709871 <<
+                    // 7A1A986A - F3 A4 - repe movsb
+                    // 7A1A986C - E9 17030000 - jmp cloudmusic.dll + 709B88
+                    if (!ReadProcessMemory(EntryPoint, BaseAddress + offset.Offsets.CachePointer, buffer, sizeof(uint), IntPtr.Zero))
+                    {
+                        Debug.Print("Error read cache array pointer for %LocalAppData%/NetEase/CloudMusic/webdata/file");
+                        return;
+                    }
+
+                    var add = BitConverter.ToUInt32(buffer, 0);
+                    var ptr = new IntPtr(add);
+                    if (!ReadProcessMemory(EntryPoint, ptr, buffer, int.MaxValue.ToString().Length * 2, IntPtr.Zero))
+                    {
+                        Debug.Print("Error read pointer for %LocalAppData%/NetEase/CloudMusic/webdata/file");
+                        return;
+                    }
+
+                    /* {tid}_{fid}_{data} */
+                    var id = Encoding.Unicode.GetString(buffer).Trim().Split('_')[0];
+
+                    var sound = NetEaseCacheManager.GetSoundInfo(int.Parse(id));
+                    if (sound == null)
+                    {
+                        Debug.Print($"Sound {id} not found in cache");
+                        return;
+                    }
+
+                    title = sound.Track.Name;
+                    album = sound.Track.Album.Name;
+                    artists = string.Join(", ", sound.Track.Artists.Select(x => x.Name));
+                    cover = sound.Track.Album.Cover;
+                    lens = sound.Track.Duration * 0.001;
+                    url = $"https://music.163.com/song?id={sound.Id}";
+                    extra = true;
+                }
+                catch (Exception e)
+                {
+                    Debug.Print(e.ToString());
+                }
+            }
         }
 
         [DllImport("kernel32", SetLastError = true)]
