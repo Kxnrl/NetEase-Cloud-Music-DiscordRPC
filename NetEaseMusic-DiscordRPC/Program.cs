@@ -14,6 +14,8 @@ namespace NetEaseMusic_DiscordRPC
 {
     internal static class Program
     {
+        private static readonly Memory Memory = new Memory(0);
+
         private const string NeteaseAppId = "481562643958595594";
         private const string TencentAppId = "903485504899665990";
 
@@ -105,6 +107,7 @@ namespace NetEaseMusic_DiscordRPC
             var maxSongLens = 0.0;
             var lastPlaying = -1;
 
+
             while (true)
             {
                 try
@@ -112,7 +115,7 @@ namespace NetEaseMusic_DiscordRPC
                     var lastRate = currentRate;
                     var lastLens = maxSongLens;
                     var skipThis = false;
-
+                    
                     if (!Win32Api.User32.GetWindowTitle("OrpheusBrowserHost", out var title, out var pid) &&
                         !Win32Api.User32.GetWindowTitle("QQMusic_Daemon_Wnd", out title))
                     {
@@ -120,7 +123,7 @@ namespace NetEaseMusic_DiscordRPC
                         playerState = false;
                         goto update;
                     }
-
+                    
                     // NetEase
                     if (pid > 0)
                     {
@@ -129,6 +132,10 @@ namespace NetEaseMusic_DiscordRPC
                         var album = string.Empty;
                         var cover = string.Empty;
                         var url = string.Empty;
+
+                        Memory.UpdateProcessByPid(pid);
+                        Debug.Print($"Duration: {Memory.GetPlayedDuration()}, status: {Memory.GetPlayerStatus()}, songId: {Memory.GetCurrentSongId()}");
+
                         MemoryUtil.LoadNetEaseMemory(pid, ref currentRate, ref maxSongLens, ref title, ref album, ref artists,
                             ref cover, ref url, out var extra);
 
