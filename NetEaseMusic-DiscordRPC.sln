@@ -1,9 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27703.2042
+# Visual Studio Version 17
+VisualStudioVersion = 17.11.35327.3
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NetEaseMusic-DiscordRPC", "NetEaseMusic-DiscordRPC\NetEaseMusic-DiscordRPC.csproj", "{8A5639C6-8083-4623-9234-D87878036C4E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Vanessa", "Vanessa\Vanessa.csproj", "{5B2859C2-BCDE-46C2-A113-13E48AB0A7B0}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DiscordRPC", "submodule\discord-rpc-csharp\DiscordRPC\DiscordRPC.csproj", "{D3E3FE4A-F603-493B-8AE0-A402A91C914F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +19,14 @@ Global
 		{8A5639C6-8083-4623-9234-D87878036C4E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8A5639C6-8083-4623-9234-D87878036C4E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8A5639C6-8083-4623-9234-D87878036C4E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5B2859C2-BCDE-46C2-A113-13E48AB0A7B0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5B2859C2-BCDE-46C2-A113-13E48AB0A7B0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5B2859C2-BCDE-46C2-A113-13E48AB0A7B0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5B2859C2-BCDE-46C2-A113-13E48AB0A7B0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D3E3FE4A-F603-493B-8AE0-A402A91C914F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D3E3FE4A-F603-493B-8AE0-A402A91C914F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D3E3FE4A-F603-493B-8AE0-A402A91C914F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D3E3FE4A-F603-493B-8AE0-A402A91C914F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
