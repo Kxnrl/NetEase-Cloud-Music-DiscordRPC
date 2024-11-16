@@ -14,12 +14,13 @@ internal static class Memory
         var ntHeader = address + ntOffset;
 
         // IMAGE
-        var fileHeader = ntHeader + 4;
-        var sections   = memory.ReadInt16(ntHeader, 6);
+        var fileHeader  = ntHeader + 4;
+        var sections    = memory.ReadInt16(ntHeader,   6);
+        var sectionSize = memory.ReadInt16(fileHeader, 16);
 
         // OPT HEADER
         var optHeader     = fileHeader + 20;
-        var sectionHeader = optHeader  + 240;
+        var sectionHeader = optHeader  + sectionSize;
 
         var cursor = sectionHeader;
 
@@ -166,6 +167,9 @@ internal sealed class ProcessMemory
 
     public int ReadInt32(IntPtr address, int offset = 0)
         => BitConverter.ToInt32(ReadBytes(IntPtr.Add(address, offset), 4), 0);
+
+    public uint ReadUInt32(IntPtr address, int offset = 0)
+        => BitConverter.ToUInt32(ReadBytes(IntPtr.Add(address, offset), 4), 0);
 
     [DllImport("kernel32.dll", SetLastError = true)]
     private static extern bool ReadProcessMemory(IntPtr pHandle, IntPtr address, byte[] buffer, int size, IntPtr bytesRead);

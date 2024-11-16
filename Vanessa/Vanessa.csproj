@@ -10,7 +10,7 @@
     <RootNamespace>Kxnrl.Vanessa</RootNamespace>
     <VersionPrefix>1.0</VersionPrefix>
     <VersionSuffix>1</VersionSuffix>
-    <Version>$(VersionPrefix).$(VersionSuffix)</Version>
+    <Version>3.0</Version>
     <PackageProjectUrl>https://github.com/Kxnrl/NetEase-Cloud-Music-DiscordRPC</PackageProjectUrl>
     <Copyright>©2024 Kyle</Copyright>
     <RepositoryUrl>https://github.com/Kxnrl/NetEase-Cloud-Music-DiscordRPC</RepositoryUrl>

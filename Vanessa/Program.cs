@@ -156,7 +156,7 @@ internal class Program
                         rpc.Assets = new Assets
                         {
                             LargeImageKey  = info.Cover,
-                            LargeImageText = info.Album,
+                            LargeImageText = $"💿 {info.Album}",
                             SmallImageKey  = "timg",
                             SmallImageText = "NetEase CloudMusic",
                         };
