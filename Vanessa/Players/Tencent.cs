@@ -8,6 +8,21 @@ namespace Kxnrl.Vanessa.Players;
 
 internal sealed class Tencent : IMusicPlayer
 {
+    /*
+       版本 20.43 结构
+       struct CurrentSongInfo {
+           std::string m_szSong; // 0x0
+           std::string m_szArtist; // 0x18
+           std::string m_szAlbum; // 0x30
+           std::string m_szAlbumThumbnailUrl; // 0x48
+           uint32_t m_nSongId; // 0x60
+           private: char pad_64[0x4]; public:
+           uint32_t m_nSongDuration; // 0x68
+           uint32_t m_nSongSchedule; // 0x6c
+           uint32_t m_nPlayStatus; // 0x70
+       }; // Size: 0x74
+     */
+
     // 如何更新Pattern:
     // 1. 在 QQMusic.dll 里搜字符串 "Tencent Technology (Shenzhen) Company Limited", 并且找到引用的函数（理论上只有一个引用）
     // 2. 引用到字符串的是一个初始化的函数，在引用到字符串的地方往上找类似这样的伪代码，理论上来讲这个伪代码会重复3次
@@ -136,6 +151,7 @@ internal sealed class Tencent : IMusicPlayer
         return Encoding.UTF8.GetString(strBuffer);
     }
 
+    // 0 暂停， 1播放， 3缓冲
     private bool IsPaused()
         => _process.ReadInt32(_currentSongInfoAddress, (StdStringSize * 4) + 16) == 0;
 }
