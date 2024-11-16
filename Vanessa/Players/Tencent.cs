@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.Text;
 using Kxnrl.Vanessa.Models;
@@ -8,18 +8,20 @@ namespace Kxnrl.Vanessa.Players;
 
 internal sealed class Tencent : IMusicPlayer
 {
-    private const string CurrentSOngInfoPattern
-        = "B9 ? ? ? ? C7 05 ? ? ? ? ? ? ? ? E8 ? ? ? ? B9";
+    // 如何更新Pattern:
+    // 1. 在 QQMusic.dll 里搜字符串 "Tencent Technology (Shenzhen) Company Limited", 并且找到引用的函数（理论上只有一个引用）
+    // 2. 引用到字符串的是一个初始化的函数，在引用到字符串的地方往上找类似这样的伪代码，理论上来讲这个伪代码会重复3次
+    // byte_xxxxx = 0;
+    // dword_xxxxx+0x10 = 0;
+    // dword_xxxxx+0x14 = 15;
+    // 这个是初始化 std::string, 我们要找的是第一个，这个是当前播放的歌的名字
+    // 3. 选中然后在汇编页面生成Pattern
+    private const string CurrentSongInfoPattern
+        = "A2 ? ? ? ? A3 ? ? ? ? C7 05 ? ? ? ? ? ? ? ? A2 ? ? ? ? A3 ? ? ? ? C7 05 ? ? ? ? ? ? ? ? A2 ? ? ? ? A3";
 
-    private const string AlbumThumbnailPattern
-        = "A1 ? ? ? ? 6A ? 51 8B CC 51 89 01 8B C4 8D 4D ? C7 00 ? ? ? ? FF 15 ? ? ? ? A1 ? ? ? ? 6A ? 51 8B CC 51 89 01 8B C4 8D 4D ? C7 00 ? ? ? ? FF 15 ? ? ? ? 6A ? FF 35 ? ? ? ? 51 8B C4 8D 4D ? C7 00 ? ? ? ? FF 15 ? ? ? ? 6A ? FF 35 ? ? ? ? 51 8B C4 8D 4D ? C7 00 ? ? ? ? FF 15 ? ? ? ? 6A ? FF 35 ? ? ? ? 51 8B C4 C7 00";
-
-    private const string IsPausedPattern
-        = "0F 29 05 ? ? ? ? C7 05 ? ? ? ? ? ? ? ? C7 05 ? ? ? ? ? ? ? ? C7 05 ? ? ? ? ? ? ? ? E8";
+    private const int StdStringSize = 0x18;
 
     private readonly nint          _currentSongInfoAddress;
-    private readonly nint          _isPausedAddress;
-    private readonly nint          _albumThumbnailAddress;
 
     private readonly int           _pid;
     private readonly ProcessMemory _process;
@@ -39,22 +41,10 @@ internal sealed class Tencent : IMusicPlayer
             var process = new ProcessMemory(pid);
             var address = module.BaseAddress;
 
-            if (Memory.FindPattern(CurrentSOngInfoPattern, pid, address, out var patternAddress))
+            if (Memory.FindPattern(CurrentSongInfoPattern, pid, address, out var patternAddress))
             {
                 var currentSongAddress = process.ReadInt32(patternAddress, 1);
                 _currentSongInfoAddress = currentSongAddress;
-            }
-
-            if (Memory.FindPattern(IsPausedPattern, pid, address, out patternAddress))
-            {
-                var isPausedAddress = process.ReadInt32(patternAddress, 3);
-                _isPausedAddress = isPausedAddress + 4;
-            }
-
-            if (Memory.FindPattern(AlbumThumbnailPattern, pid, address, out patternAddress))
-            {
-                var albumThumbnailAddress = process.ReadInt32(patternAddress, 1);
-                _albumThumbnailAddress = albumThumbnailAddress;
             }
 
             _process = process;
@@ -69,7 +59,7 @@ internal sealed class Tencent : IMusicPlayer
 
         if (_currentSongInfoAddress == 0)
         {
-            throw new EntryPointNotFoundException("_currentSongAddress is 0");
+            throw new EntryPointNotFoundException("_currentSongInfoAddress is 0");
         }
     }
 
@@ -102,54 +92,50 @@ internal sealed class Tencent : IMusicPlayer
     }
 
     private uint GetSongIdentity()
-        => _process.ReadUInt32(_currentSongInfoAddress);
+        => _process.ReadUInt32(_currentSongInfoAddress, StdStringSize * 4);
 
     private int GetSongDuration()
-        => _process.ReadInt32(_currentSongInfoAddress, 0x10);
+        => _process.ReadInt32(_currentSongInfoAddress, (StdStringSize * 4) + 8 /*跳过Id跟一个4字节大小的玩意*/);
 
     private int GetSongSchedule()
-        => _process.ReadInt32(_currentSongInfoAddress, 0xC);
+        => _process.ReadInt32(_currentSongInfoAddress, (StdStringSize * 4) + 12);
 
     private string GetSongName()
-    {
-        var address = _process.ReadInt32(_currentSongInfoAddress);
-        var bytes   = _process.ReadBytes(address, 512);
-
-        var result = Encoding.Unicode.GetString(bytes);
-
-        return result[..result.IndexOf('\0')];
-    }
+        => ReadStdString(_currentSongInfoAddress);
 
     private string GetArtistName()
-    {
-        var address = _process.ReadInt32(_currentSongInfoAddress, 4);
-        var bytes   = _process.ReadBytes(address, 512);
-
-        var result = Encoding.Unicode.GetString(bytes);
-
-        return result[..result.IndexOf('\0')];
-    }
+        => ReadStdString(_currentSongInfoAddress + StdStringSize);
 
     private string GetAlbumName()
-    {
-        var address = _process.ReadInt32(_currentSongInfoAddress, 8);
-        var bytes   = _process.ReadBytes(address, 512);
-
-        var result = Encoding.Unicode.GetString(bytes);
-
-        return result[..result.IndexOf('\0')];
-    }
+        => ReadStdString(_currentSongInfoAddress + (StdStringSize * 2));
 
     private string GetAlbumThumbnailUrl()
+        => ReadStdString(_currentSongInfoAddress + (StdStringSize * 3));
+
+    private string ReadStdString(nint address)
     {
-        var address = _process.ReadInt32(_albumThumbnailAddress);
-        var bytes   = _process.ReadBytes(address, 512);
+        var strLength = _process.ReadInt32(address, 0x10);
 
-        var result = Encoding.Unicode.GetString(bytes);
+        if (strLength == 0)
+        {
+            return string.Empty;
+        } // small string optimization
 
-        return result[..result.IndexOf('\0')];
+        byte[] strBuffer;
+
+        if (strLength <= 15)
+        {
+            strBuffer = _process.ReadBytes(address, strLength);
+        }
+        else
+        {
+            var strAddress = _process.ReadInt32(address);
+            strBuffer = _process.ReadBytes(strAddress, strLength);
+        }
+
+        return Encoding.UTF8.GetString(strBuffer);
     }
 
     private bool IsPaused()
-        => _process.ReadInt32(_isPausedAddress) == 1;
+        => _process.ReadInt32(_currentSongInfoAddress, (StdStringSize * 4) + 16) == 0;
 }
