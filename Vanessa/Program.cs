@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using DiscordRPC;
 using Kxnrl.Vanessa.Players;
+using Kxnrl.Vanessa.Utils;
 using Button = DiscordRPC.Button;
 
 namespace Kxnrl.Vanessa;
@@ -145,8 +146,9 @@ internal class Program
                 {
                     rpcClient.Update(rpc =>
                     {
-                        rpc.Details = $"🎵 {info.Title}";
-                        rpc.State   = $"🎤 {info.Artists}";
+                        // Discord RPC 文本最长支持128个字节，超长部分需截断，否则会引起错误
+                        rpc.Details = StringUtils.GetTruncatedStringByMaxByteLength($"🎵 {info.Title}", 128);
+                        rpc.State   = StringUtils.GetTruncatedStringByMaxByteLength($"🎤 {info.Artists}", 128);
                         rpc.Type    = ActivityType.Listening;
 
                         rpc.Timestamps = new Timestamps(DateTime.UtcNow.Subtract(TimeSpan.FromSeconds(info.Schedule)),
@@ -156,7 +158,7 @@ internal class Program
                         rpc.Assets = new Assets
                         {
                             LargeImageKey  = info.Cover,
-                            LargeImageText = $"💿 {info.Album}",
+                            LargeImageText = StringUtils.GetTruncatedStringByMaxByteLength($"💿 {info.Album}", 128),
                             SmallImageKey  = "timg",
                             SmallImageText = "NetEase CloudMusic",
                         };
