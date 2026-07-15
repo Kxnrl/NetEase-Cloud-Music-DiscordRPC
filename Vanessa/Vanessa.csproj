@@ -1,8 +1,8 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net9.0-windows</TargetFramework>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
     <ImplicitUsings>disable</ImplicitUsings>
     <LangVersion>12</LangVersion>
     <Nullable>enable</Nullable>
@@ -10,11 +10,13 @@
     <RootNamespace>Kxnrl.Vanessa</RootNamespace>
     <VersionPrefix>1.0</VersionPrefix>
     <VersionSuffix>1</VersionSuffix>
-    <Version>3.0</Version>
+    <Version>3.1</Version>
     <PackageProjectUrl>https://github.com/Kxnrl/NetEase-Cloud-Music-DiscordRPC</PackageProjectUrl>
-    <Copyright>©2024 Kyle</Copyright>
+    <Copyright>©2026 Kyle</Copyright>
     <RepositoryUrl>https://github.com/Kxnrl/NetEase-Cloud-Music-DiscordRPC</RepositoryUrl>
     <PlatformTarget>x64</PlatformTarget>
+    <!-- No WinRT API is used; skip the Windows SDK projection assemblies (~25 MB in the single-file exe) -->
+    <IncludeWindowsSDKRefFrameworkReferences>false</IncludeWindowsSDKRefFrameworkReferences>
     <UseWindowsForms>true</UseWindowsForms>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <ApplicationIcon>Resources\icon.ico</ApplicationIcon>
@@ -37,10 +39,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NETCore.Platforms" Version="7.0.4" />
-    <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="System.Security.AccessControl" Version="6.0.1" />
-    <PackageReference Include="System.Security.Principal.Windows" Version="5.0.0" />
   </ItemGroup>
 
   <ItemGroup>

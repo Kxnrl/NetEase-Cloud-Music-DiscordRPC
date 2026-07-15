@@ -6,6 +6,11 @@ Enables Discord [Rich Presence](https://discordapp.com/rich-presence) For Neteas
 对于旧版, 请使用2.X分支.  
   
   
+### Requirement
+* Requires [.NET 10 Desktop Runtime (x64)](https://dotnet.microsoft.com/download/dotnet/10.0) to run.
+* 需要安装 [.NET 10 桌面运行时 (x64)](https://dotnet.microsoft.com/zh-cn/download/dotnet/10.0) 才能运行.  
+  
+  
 ### Info
 * This application will auto launch on system start.
 * 这个软件会在你开机的时候自启动.  

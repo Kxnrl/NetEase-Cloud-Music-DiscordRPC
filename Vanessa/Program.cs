@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using DiscordRPC;
+using DiscordRPC.Helper;
 using Kxnrl.Vanessa.Players;
 using Button = DiscordRPC.Button;
 
@@ -14,6 +15,10 @@ internal class Program
 {
     private const string NetEaseAppId = "481562643958595594";
     private const string TencentAppId = "903485504899665990";
+
+    // Discord RPC limits: Details/State/LargeImageText max 128 UTF-8 bytes, image keys max 256 (see DiscordRPC.RichPresence)
+    private const int MaxRpcTextBytes     = 128;
+    private const int MaxRpcImageKeyBytes = 256;
 
     private static async Task Main()
     {
@@ -110,7 +115,7 @@ internal class Program
                 {
                     player = lastInstance is null
                         ? new Tencent(tencentId)
-                        : lastInstance.Validate(netEaseProcessId)
+                        : lastInstance.Validate(tencentId)
                             ? lastInstance
                             : new Tencent(tencentId);
 
@@ -145,8 +150,8 @@ internal class Program
                 {
                     rpcClient.Update(rpc =>
                     {
-                        rpc.Details = $"🎵 {info.Title}";
-                        rpc.State   = $"🎤 {info.Artists}";
+                        rpc.Details = $"🎵 {info.Title}".TruncateByUtf8Bytes(MaxRpcTextBytes);
+                        rpc.State   = $"🎤 {info.Artists}".TruncateByUtf8Bytes(MaxRpcTextBytes);
                         rpc.Type    = ActivityType.Listening;
 
                         rpc.Timestamps = new Timestamps(DateTime.UtcNow.Subtract(TimeSpan.FromSeconds(info.Schedule)),
@@ -155,8 +160,9 @@ internal class Program
 
                         rpc.Assets = new Assets
                         {
-                            LargeImageKey  = info.Cover,
-                            LargeImageText = $"💿 {info.Album}",
+                            // fall back to Discord's default artwork when the cover url exceeds the limit
+                            LargeImageKey  = info.Cover.WithinLength(MaxRpcImageKeyBytes) ? info.Cover : string.Empty,
+                            LargeImageText = $"💿 {info.Album}".TruncateByUtf8Bytes(MaxRpcTextBytes),
                             SmallImageKey  = "timg",
                             SmallImageText = "NetEase CloudMusic",
                         };
