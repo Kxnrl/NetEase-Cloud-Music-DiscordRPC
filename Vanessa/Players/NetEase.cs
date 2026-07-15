@@ -20,6 +20,15 @@ internal sealed class NetEase : IMusicPlayer
     private readonly nint          _audioPlayerPointer;
     private readonly nint          _schedulePointer;
 
+    // Metadata is immutable per song id: cache it so the playingList file is
+    // only read (and json-parsed) when the song actually changes, instead of
+    // on every 233ms loop.
+    private string? _cachedIdentity;
+    private string  _cachedTitle   = string.Empty;
+    private string  _cachedArtists = string.Empty;
+    private string  _cachedAlbum   = string.Empty;
+    private string  _cachedCover   = string.Empty;
+
     private const string AudioPlayerPattern
         = "48 8D 0D ? ? ? ? E8 ? ? ? ? 48 8D 0D ? ? ? ? E8 ? ? ? ? 90 48 8D 0D ? ? ? ? E8 ? ? ? ? 48 8D 05 ? ? ? ? 48 8D A5 ? ? ? ? 5F 5D C3 CC CC CC CC CC 48 89 4C 24 ? 55 57 48 81 EC ? ? ? ? 48 8D 6C 24 ? 48 8D 7C 24";
 
@@ -89,15 +98,6 @@ internal sealed class NetEase : IMusicPlayer
 
     public PlayerInfo? GetPlayerInfo()
     {
-        var jsonData = File.Exists(_path) ? File.ReadAllText(_path) : null;
-
-        var playlist = jsonData is { } json ? JsonSerializer.Deserialize<NetEasePlaylist>(json) : null;
-
-        if (playlist is null || playlist.List.Count == 0)
-        {
-            return null;
-        }
-
         var status = GetPlayerStatus();
 
         if (status == PlayStatus.Waiting)
@@ -107,18 +107,26 @@ internal sealed class NetEase : IMusicPlayer
 
         var identity = GetCurrentSongId();
 
-        if (playlist.List.Find(x => x.Identity == identity) is not { Track: { } track })
+        if (string.IsNullOrEmpty(identity))
         {
+            return null;
+        }
+
+        if (!string.Equals(identity, _cachedIdentity, StringComparison.Ordinal) && !TryLoadTrackMetadata(identity))
+        {
+            // the player rewrites playingList asynchronously, so right after a song
+            // switch the new id may not be in the file yet; the caller's debounce
+            // absorbs this and we retry on the next loop.
             return null;
         }
 
         return new PlayerInfo
         {
             Identity = identity,
-            Title    = track.Name,
-            Artists  = string.Join(',', track.Artists.Select(x => x.Singer)),
-            Album    = track.Album.Name,
-            Cover    = track.Album.Cover,
+            Title    = _cachedTitle,
+            Artists  = _cachedArtists,
+            Album    = _cachedAlbum,
+            Cover    = _cachedCover,
             Duration = GetSongDuration(),
             Schedule = GetSchedule(),
             Pause    = status == PlayStatus.Paused,
@@ -126,6 +134,37 @@ internal sealed class NetEase : IMusicPlayer
             // lock
             Url = $"https://music.163.com/#/song?id={identity}",
         };
+    }
+
+    private bool TryLoadTrackMetadata(string identity)
+    {
+        NetEasePlaylist? playlist;
+
+        try
+        {
+            var jsonData = File.Exists(_path) ? File.ReadAllText(_path) : null;
+
+            playlist = jsonData is { } json ? JsonSerializer.Deserialize<NetEasePlaylist>(json) : null;
+        }
+        catch (Exception e) when (e is IOException or JsonException)
+        {
+            // the player is writing the file right now (sharing violation or a
+            // truncated json): transient, retry on the next loop.
+            return false;
+        }
+
+        if (playlist?.List?.Find(x => x.Identity == identity) is not { Track: { } track })
+        {
+            return false;
+        }
+
+        _cachedIdentity = identity;
+        _cachedTitle    = track.Name;
+        _cachedArtists  = string.Join(',', track.Artists.Select(x => x.Singer));
+        _cachedAlbum    = track.Album.Name;
+        _cachedCover    = track.Album.Cover;
+
+        return true;
     }
 
 #region Unsafe
